@@ -5,15 +5,18 @@ import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.Drawer
 import org.openrndr.draw.isolated
+import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.noise.Random
+import org.openrndr.extra.shapes.Arc
 import org.openrndr.extra.shapes.hobbyCurve
 import org.openrndr.math.Vector2
 import org.openrndr.shape.*
 
 fun main() = application {
     configure {
-        width = 1400
-        height = 1400
+        width = 900
+        height = 900
+        //position = IntVector2(200, -1500)
     }
     program {
 
@@ -56,11 +59,12 @@ class MapperElement(var contour: ShapeContour): UIElementImpl() {
 
     private val proximityThreshold = 9.0
 
-    var contourPoints = contour.segments.map { it.start }
+    private var segmentsRef = contour.segments.toMutableList()
+    private var points = contour.segments.map { it.start }.toMutableList()
 
     private fun checkProximity(pos: Vector2): Boolean {
 
-        if (contourPoints.any {
+        if (points.any {
                 pos.distanceTo(it) < proximityThreshold
             }) return false
 
@@ -75,28 +79,27 @@ class MapperElement(var contour: ShapeContour): UIElementImpl() {
     }
 
     fun addPoint(pos: Vector2) {
-        val nearest = contour.nearest(pos)
-        val nearestSegment = nearest.segment
-        val nearestSegmentT = nearest.segmentT
+        val nearestPos = contour.nearest(pos)
+        val nearestSegment = nearestPos.segment
 
-        val split = nearestSegment.split(nearestSegmentT)
-        val segments = contour.segments.toMutableList()
+        val split = nearestSegment.split(nearestPos.segmentT)
 
-        val segmentIndex = segments.indexOf(nearestSegment)
-        segments[segmentIndex] = split[0]
-        segments.add(segmentIndex + 1, split[1])
+        val segmentIdx = segmentsRef.indexOf(nearestSegment)
 
-        val newContour = contour {
-            for (segment in segments) {
-                segment(segment)
-            }
+        segmentsRef[segmentIdx] = split[0]
+        segmentsRef.add(segmentIdx + 1, split[1])
+
+        contour = contour {
+            for (segment in segmentsRef) { segment(segment) }
         }.close()
 
-        contour = newContour
-        contourPoints = newContour.segments.map { it.start }
-        actionBounds = newContour
+        points.add(segmentIdx + 1, split[1].start)
+        actionBounds = contour
     }
 
+
+    var activeSegment: Segment? = null
+    var activePoint: Vector2? = null
     init {
         actionBounds = contour
 
@@ -106,6 +109,8 @@ class MapperElement(var contour: ShapeContour): UIElementImpl() {
 
         buttonUp.listen {
             it.cancelPropagation()
+            activeSegment = null
+            activePoint = null
 
             val isNearContour = checkProximity(it.position)
 
@@ -117,13 +122,21 @@ class MapperElement(var contour: ShapeContour): UIElementImpl() {
         dragged.listen {
             it.cancelPropagation()
 
-            val notInList = checkProximity(it.position)
-
-            if (notInList) {
-                addPoint(it.position)
-            } else {
-                val nearest = contourPoints.minBy { p -> p.distanceTo(it.position) }
+            if (checkProximity(it.position) && activePoint == null) {
+                activePoint = contour.nearest(it.position).segment.start
             }
+
+            activePoint = it.position
+            activePoint?.let { ap ->
+                val idx = segmentsRef.map { it.start }.indexOf(ap)
+                activeSegment = segmentsRef.getOrNull(idx)
+                if (activeSegment != null) {
+                    segmentsRef[idx] = Segment(it.position, segmentsRef[idx].end)
+                }
+            }
+
+
+
         }
 
     }
@@ -149,13 +162,18 @@ class MapperElement(var contour: ShapeContour): UIElementImpl() {
         drawer.fill = ColorRGBa.PINK.opacify(0.4)
         drawer.shape(shapeProximity)
 
-        for (segment in contour.segments) {
+        for (point in points) {
+            drawer.stroke = null
             drawer.fill = ColorRGBa.GREEN
-            drawer.circle(segment.end, 4.0)
+            drawer.circle(point, 4.0)
         }
 
         drawer.fill = ColorRGBa.YELLOW.opacify(0.3)
         drawer.contour(actionBounds)
+
+        drawer.fill = ColorRGBa.PURPLE.shade(1.5)
+        activePoint?.let { drawer.circle(it, 9.0) }
+
     }
 
 }
