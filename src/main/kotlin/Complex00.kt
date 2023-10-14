@@ -4,6 +4,7 @@ import lib.points
 import lib.sortedClockwise
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
+import org.openrndr.draw.isolated
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.noise.uniform
@@ -25,6 +26,7 @@ fun main() = application {
 
         val uiManager = UIManager(program.window, mouse)
         val c = object: UIElementImpl() {
+            var debug = false
 
             var contour = Circle(drawer.bounds.center, 200.0).contour.close()
                 set(value) {
@@ -141,8 +143,13 @@ fun main() = application {
                 drawer.stroke = ColorRGBa.WHITE
                 drawer.contour(contour)
 
-                drawer.stroke = ColorRGBa.PINK.shade(0.4)
-                drawer.contour(actionBounds)
+                drawer.fill = ColorRGBa.PURPLE.mix(ColorRGBa.PINK, 0.5)
+                drawer.circles(contour.points(), 6.0)
+
+                if (activePointIdx != -1) {
+                    drawer.fill = ColorRGBa.ORANGE
+                    drawer.circle(contour.points()[activePointIdx], 9.0)
+                }
 
                 for ((i, segment) in contour.segments.withIndex()) {
                     drawer.strokeWeight = 1.0
@@ -160,21 +167,22 @@ fun main() = application {
 
                 }
 
-                drawer.fill = ColorRGBa.PURPLE.mix(ColorRGBa.PINK, 0.5)
-                drawer.circles(contour.points(), 6.0)
 
-                if (activePointIdx != -1) {
-                    drawer.fill = ColorRGBa.ORANGE
-                    drawer.circle(contour.points()[activePointIdx], 9.0)
+                if (debug) drawDebug()
+            }
+
+            private fun drawDebug() {
+                drawer.isolated {
+                    drawer.stroke = ColorRGBa.PINK.shade(0.4)
+                    drawer.contour(actionBounds)
+                    
+                    for (actionablePoint in actionablePoints) {
+                        drawer.fill = null
+                        drawer.stroke = ColorRGBa.WHITE
+                        drawer.circle(actionablePoint, 9.0 + proximityThreshold)
+                    }
+
                 }
-
-                for (actionablePoint in actionablePoints) {
-                    drawer.fill = null
-                    drawer.stroke = ColorRGBa.WHITE
-                    drawer.circle(actionablePoint, 9.0 + proximityThreshold)
-                }
-
-
             }
 
             private fun isInRange(pos: Vector2, mousePos: Vector2): Boolean {
