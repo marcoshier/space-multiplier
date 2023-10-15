@@ -23,7 +23,7 @@ fun main() = application {
 
 
 
-        val uiManager = UIManager(program.window, mouse)
+        val uiManager = UIManager(program)
         val c = object: UIElementImpl() {
 
             var contour = Circle(drawer.bounds.center, 200.0).contour.sub(0.0, 0.25)

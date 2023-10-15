@@ -24,7 +24,7 @@ fun main() = application {
 
 
 
-        val uiManager = UIManager(program.window, mouse)
+        val uiManager = UIManager(program)
         val c = object: UIElementImpl() {
             var debug = false
 

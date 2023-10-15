@@ -19,6 +19,7 @@ interface UIElement: MouseEvents {
     val zOrder: Int
     val actionBounds: ShapeContour
     val visible: Boolean
+    var shiftPressed: Boolean
     val clicked: Event<MouseEvent>
     val doubleClicked: Event<MouseEvent>
 }
@@ -28,6 +29,7 @@ open class UIElementImpl : UIElement {
     override var zOrder = 0
     override var actionBounds = Rectangle(0.0, 0.0, 100.0, 100.0).contour
     override var visible = true
+    override var shiftPressed = false
 
     override val buttonDown: Event<MouseEvent> = Event("ui-element-button-down")
     override val buttonUp: Event<MouseEvent> = Event("ui-element-button-up")
@@ -49,7 +51,7 @@ open class UIElementImpl : UIElement {
 
 private val logger = KotlinLogging.logger {  }
 
-class UIManager(val window: Window, mouseEvents: MouseEvents) {
+class UIManager(val program: Program) {
     var activeElement: UIElement? = null
     var dragElement: UIElement? = null
     var postDragElement: UIElement? = null
@@ -61,7 +63,7 @@ class UIManager(val window: Window, mouseEvents: MouseEvents) {
 
     fun requestDraw() {
         lastAction = System.currentTimeMillis()
-        window.requestDraw()
+        program.window.requestDraw()
     }
 
     val clicked = Event<Unit>()
@@ -69,7 +71,7 @@ class UIManager(val window: Window, mouseEvents: MouseEvents) {
 
 
     init {
-        mouseEvents.buttonDown.listen { event ->
+        program.mouse.buttonDown.listen { event ->
             lastMousePosition = event.position
             if (!event.propagationCancelled) {
                 for (e in elements.filter { it.visible && it.actionBounds.contains(event.position) }.sortedBy { it.zOrder }) {
@@ -83,7 +85,7 @@ class UIManager(val window: Window, mouseEvents: MouseEvents) {
             }
         }
 
-        mouseEvents.dragged.listen { event ->
+        program.mouse.dragged.listen { event ->
             if (!event.propagationCancelled) {
 
 
@@ -101,7 +103,7 @@ class UIManager(val window: Window, mouseEvents: MouseEvents) {
             }
         }
 
-        mouseEvents.buttonUp.listen { event ->
+        program.mouse.buttonUp.listen { event ->
             if (!event.propagationCancelled) {
                 lastMousePosition = event.position
 
@@ -131,13 +133,25 @@ class UIManager(val window: Window, mouseEvents: MouseEvents) {
             }
         }
 
-
-        mouseEvents.scrolled.listen {
+        program.mouse.scrolled.listen {
             if (!it.propagationCancelled) {
                 activeElement?.scrolled?.trigger(it)
                 if (activeElement != null) {
                     requestDraw()
                 }
+            }
+        }
+
+
+        program.keyboard.keyDown.listen {
+            if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
+                elements.onEach { e -> e.shiftPressed = true }
+            }
+        }
+
+        program.keyboard.keyUp.listen {
+            if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
+                elements.onEach { e -> e.shiftPressed = false }
             }
         }
     }

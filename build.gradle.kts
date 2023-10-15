@@ -106,7 +106,8 @@ repositories {
 }
 
 dependencies {
-
+    implementation("org.bytedeco:librealsense2:2.53.1-1.5.9")
+    runtimeOnly("org.bytedeco:librealsense2:2.53.1-1.5.9:windows-x86_64")
 //    implementation(libs.jsoup)
 //    implementation(libs.gson)
 //    implementation(libs.csv)
