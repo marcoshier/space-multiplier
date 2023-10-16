@@ -24,7 +24,7 @@ fun main() = application {
         height = 1000
     }
 
-    program {
+    oliveProgram {
 
         val uiManager = UIManager(program)
 
@@ -106,25 +106,20 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             val d = mouseP - activePoint
 
             if (activePoint == segment.start) {
-                val cl0 = Array(2) { Vector2.ZERO }
+                val cl0 = segment.control
                 segment.control.getOrNull(0)?.let { cl0[0] = it + d }
-                segment.control.getOrNull(1)?.let { cl0[1] = it }
                 cSegments[segmentIdx] = Segment(mouseP, cl0, segment.end)
 
-                val cl1 = Array(2) { Vector2.ZERO }
-                cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it }
+                val cl1 = cSegments[sbIdx].control
                 cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it + d }
                 cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cl1, mouseP)
             } else {
-
-                val cl0 = Array(2) { Vector2.ZERO }
-                segment.control.getOrNull(0)?.let { cl0[0] = it }
-                segment.control.getOrNull(1)?.let { cl0[1] = it + d}
+                val cl0 = segment.control
+                segment.control.getOrNull(1)?.let { cl0[1] = it + d }
                 cSegments[segmentIdx] = Segment(segment.start, cl0, mouseP)
 
-                val cl1 = Array(2) { Vector2.ZERO }
-                cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it + d}
-                cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it}
+                val cl1 = cSegments[saIdx].control
+                cSegments[saIdx].control.getOrNull(0)?.let { cl1[0] = it + d }
                 cSegments[saIdx] = Segment(mouseP, cl1, cSegments[saIdx].end)
             }
 
