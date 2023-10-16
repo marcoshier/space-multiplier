@@ -10,9 +10,11 @@ import org.openrndr.extra.imageFit.imageFit
 import org.openrndr.extra.noise.uniform
 import org.openrndr.extra.olive.Once
 import org.openrndr.extra.olive.oliveProgram
+import org.openrndr.math.Polar
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
+import kotlin.math.atan2
 import kotlin.random.Random
 
 fun main() = application {
@@ -32,7 +34,7 @@ fun main() = application {
         }
 
         val s0 by Once {
-            mapper(Rectangle.fromCenter(drawer.bounds.center, 100.0, 100.0).contour) { rt.colorBuffer(0) }
+            mapper(Rectangle.fromCenter(drawer.bounds.center, 250.0, 250.0).contour) { rt.colorBuffer(0) }
         }
 
 
@@ -104,22 +106,23 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             val d = mouseP - activePoint
 
             if (activePoint == segment.start) {
-                val cl0 = arrayOf<Vector2>()
+                val cl0 = Array(2) { Vector2.ZERO }
                 segment.control.getOrNull(0)?.let { cl0[0] = it + d }
                 segment.control.getOrNull(1)?.let { cl0[1] = it }
                 cSegments[segmentIdx] = Segment(mouseP, cl0, segment.end)
 
-                val cl1 = arrayOf<Vector2>()
+                val cl1 = Array(2) { Vector2.ZERO }
                 cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it }
                 cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it + d }
                 cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cl1, mouseP)
             } else {
-                val cl0 = arrayOf<Vector2>()
-                segment.control.getOrNull(0)?.let { cl0[0] = it}
+
+                val cl0 = Array(2) { Vector2.ZERO }
+                segment.control.getOrNull(0)?.let { cl0[0] = it }
                 segment.control.getOrNull(1)?.let { cl0[1] = it + d}
                 cSegments[segmentIdx] = Segment(segment.start, cl0, mouseP)
 
-                val cl1 = arrayOf<Vector2>()
+                val cl1 = Array(2) { Vector2.ZERO }
                 cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it + d}
                 cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it}
                 cSegments[saIdx] = Segment(mouseP, cl1, cSegments[saIdx].end)
@@ -170,8 +173,8 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             val d = mouseP - activeSegment.position(activeSegmentT)
 
             cSegments[activeSegmentIdx] = cSegments[activeSegmentIdx].transform(transform { translate(d) })
-            cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control[0], cSegments[sbIdx].control[1], cSegments[activeSegmentIdx].start)
-            cSegments[saIdx] = Segment(cSegments[activeSegmentIdx].end, cSegments[saIdx].control[0], cSegments[saIdx].control[1], cSegments[saIdx].end)
+            cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control, cSegments[activeSegmentIdx].start)
+            cSegments[saIdx] = Segment(cSegments[activeSegmentIdx].end, cSegments[saIdx].control, cSegments[saIdx].end)
 
             contour = contour {
                 for (s in cSegments) {
@@ -197,8 +200,24 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
             val split = segmentRef.split(nearest.segmentT)
 
-            cSegments[idx] = split[0]
-            cSegments.add(idx + 1, split[1])
+            val cl0 = Array(2) { Vector2.ZERO }
+            cl0[0] = split[0].control.getOrElse(0) { split[0].start }
+            cl0[1] = split[0].control.getOrElse(1)  {
+                val p = split[0].end
+                val t = atan2(p.y - contour.bounds.center.y, p.x - contour.bounds.center.x) / 4
+                Polar(Math.toDegrees(t) - 90.0, 10.0).cartesian + p
+            }
+
+            val cl1 = Array(2) { Vector2.ZERO }
+            cl1[0] = split[1].control.getOrElse(0) {
+                val p = split[1].start
+                val t = atan2(p.y - contour.bounds.center.y, p.x - contour.bounds.center.x) / 4
+                Polar(Math.toDegrees(t) + 90.0, 10.0).cartesian + p
+            }
+            cl1[1] =  split[1].control.getOrElse(1) { split[1].end }
+
+            cSegments[idx] = Segment(split[0].start, cl0, split[0].end)
+            cSegments.add(idx + 1, Segment(split[1].start, cl1, split[1].end))
 
             contour = contour {
                 for (s in cSegments) {
@@ -221,7 +240,6 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         buttonDown.listen {
             it.cancelPropagation()
-            println("down")
             lastMouseEvent = it.type
 
             val activePoint = actionablePoints.firstOrNull { ap -> isInRange(ap, it.position) }
@@ -248,7 +266,6 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         buttonUp.listen {
             it.cancelPropagation()
-            println("up")
 
             if (lastMouseEvent == MouseEventType.BUTTON_DOWN) {
                 addPoint(it.position)
@@ -259,12 +276,10 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             activeSegmentIdx = -1
             activeSegmentT = 0.5
             lastMouseEvent = it.type
-
         }
 
         dragged.listen {
             it.cancelPropagation()
-            println("dragged")
 
             if (lastMouseEvent != MouseEventType.BUTTON_UP) {
                 lastMouseEvent = it.type
