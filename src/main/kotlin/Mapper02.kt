@@ -31,8 +31,10 @@ fun main() = application {
             colorBuffer()
         }
 
-        val s0 by Once { mapper(Circle(drawer.bounds.center, 100.0).contour) { rt.colorBuffer(0) }
+        val s0 by Once {
+            mapper(Rectangle.fromCenter(drawer.bounds.center, 100.0, 100.0).contour) { rt.colorBuffer(0) }
         }
+
 
 
         uiManager.elements.addAll(listOf(s0))
@@ -41,7 +43,7 @@ fun main() = application {
 
             drawer.isolatedWithTarget(rt) {
                 drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
-                drawer.image(img)
+                drawer.imageFit(img, drawer.bounds)
             }
 
             s0.draw(drawer)
@@ -79,7 +81,6 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
         }
 
     var image: ColorBuffer? = null
-    private var fitMethod = FitMethod.Cover
 
 
     private var cSegments = contour.segments.toMutableList()
@@ -103,11 +104,25 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             val d = mouseP - activePoint
 
             if (activePoint == segment.start) {
-                cSegments[segmentIdx] = Segment(mouseP, segment.control[0] + d, segment.control[1], segment.end)
-                cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control[0], cSegments[sbIdx].control[1] + d, mouseP)
+                val cl0 = arrayOf<Vector2>()
+                segment.control.getOrNull(0)?.let { cl0[0] = it + d }
+                segment.control.getOrNull(1)?.let { cl0[1] = it }
+                cSegments[segmentIdx] = Segment(mouseP, cl0, segment.end)
+
+                val cl1 = arrayOf<Vector2>()
+                cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it }
+                cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it + d }
+                cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cl1, mouseP)
             } else {
-                cSegments[segmentIdx] = Segment(segment.start, segment.control[0], segment.control[1] + d, mouseP)
-                cSegments[saIdx] = Segment(mouseP, cSegments[saIdx].control[0] + d, cSegments[saIdx].control[1], cSegments[saIdx].end)
+                val cl0 = arrayOf<Vector2>()
+                segment.control.getOrNull(0)?.let { cl0[0] = it}
+                segment.control.getOrNull(1)?.let { cl0[1] = it + d}
+                cSegments[segmentIdx] = Segment(segment.start, cl0, mouseP)
+
+                val cl1 = arrayOf<Vector2>()
+                cSegments[sbIdx].control.getOrNull(0)?.let { cl1[0] = it + d}
+                cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it}
+                cSegments[saIdx] = Segment(mouseP, cl1, cSegments[saIdx].end)
             }
 
             contour = contour {
@@ -206,6 +221,7 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         buttonDown.listen {
             it.cancelPropagation()
+            println("down")
             lastMouseEvent = it.type
 
             val activePoint = actionablePoints.firstOrNull { ap -> isInRange(ap, it.position) }
@@ -232,6 +248,7 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         buttonUp.listen {
             it.cancelPropagation()
+            println("up")
 
             if (lastMouseEvent == MouseEventType.BUTTON_DOWN) {
                 addPoint(it.position)
@@ -247,17 +264,22 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         dragged.listen {
             it.cancelPropagation()
-            lastMouseEvent = it.type
+            println("dragged")
 
-            if (activePointIdx != -1) {
-                movePoint(it.position)
-            } else if (activeControlPointIdx != -1) {
-                moveControlPoint(it.position)
-            } else if (activeSegmentIdx != -1){
-                moveSegment(it.position)
-            } else {
-                moveShape(it.position)
+            if (lastMouseEvent != MouseEventType.BUTTON_UP) {
+                lastMouseEvent = it.type
+
+                if (activePointIdx != -1) {
+                    movePoint(it.position)
+                } else if (activeControlPointIdx != -1) {
+                    moveControlPoint(it.position)
+                } else if (activeSegmentIdx != -1){
+                    moveSegment(it.position)
+                } else {
+                    moveShape(it.position)
+                }
             }
+
         }
     }
 
@@ -269,9 +291,9 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         image?.let {
             drawer.isolated {
-                drawer.drawStyle.blendMode = BlendMode.ADD
-                drawer.imageFit(it, contour.bounds, 0.5, 0.5, fitMethod)
                 drawer.shape(contour.shape)
+                drawer.drawStyle.blendMode = BlendMode.MULTIPLY
+                drawer.imageFit(it, contour.bounds, 0.5, 0.5, FitMethod.Cover)
             }
         }
 
