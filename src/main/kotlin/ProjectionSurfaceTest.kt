@@ -1,3 +1,4 @@
+import lib.UIManager
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.drawImage
@@ -13,7 +14,7 @@ fun main() = application {
     }
 
     program {
-
+       val uiManager = UIManager(program)
        val bg = viewBox(drawer.bounds) {
             extend(Post()) {
                 val c = Checkers().apply {
@@ -27,14 +28,13 @@ fun main() = application {
             }
         }
 
+        val mapper = mapper(drawer.bounds.offsetEdges(-10.0).contour) { bg.result }
+        uiManager.elements.add(mapper)
+
         extend {
 
-            bg.draw()
-
-            drawer.fill = null
-            drawer.stroke = ColorRGBa.GREEN
-            drawer.strokeWeight = 3.0
-            drawer.rectangle(drawer.bounds)
+            bg.update()
+            mapper.draw(drawer)
         }
     }
 
