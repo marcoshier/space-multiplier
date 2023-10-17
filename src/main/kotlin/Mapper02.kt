@@ -229,6 +229,32 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
         }
     }
 
+    private fun removePoint(mouseP: Vector2) {
+        val pointInRange = cPoints.firstOrNull { it.distanceTo(mouseP) < proximityThreshold }
+
+        pointInRange?.let {
+            val s0 = cSegments.first { s -> s.end == it }
+            val s1 = cSegments.first { s -> s.start == it }
+
+            val c = arrayOf(s0.start, s1.end)
+            s0.control.getOrNull(0)?.let { c[0] = it }
+            s1.control.getOrNull(1)?.let { c[1] = it }
+
+            val newSeg = Segment(s0.start, c, s1.end)
+
+            val segmentsCopy = cSegments
+            segmentsCopy[cSegments.indexOf(s0)] = newSeg
+            segmentsCopy.remove(s1)
+
+            contour = contour {
+                for (s in segmentsCopy) {
+                    segment(s)
+                }
+            }.close()
+
+        }
+    }
+
     private var activePointIdx = -1
     private var activeControlPointIdx = -1
     private var activeSegmentIdx = -1
@@ -270,7 +296,13 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
             it.cancelPropagation()
 
             if (lastMouseEvent == MouseEventType.BUTTON_DOWN) {
-                addPoint(it.position)
+                if (it.button == MouseButton.LEFT) {
+                    addPoint(it.position)
+                } else if (it.button == MouseButton.RIGHT) {
+                    if (cSegments.size > 2) {
+                        removePoint(it.position)
+                    }
+                }
             }
 
             activePointIdx = -1
