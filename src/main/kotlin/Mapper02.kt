@@ -28,18 +28,24 @@ fun main() = application {
 
         val uiManager = UIManager(program)
 
-        val img = loadImage("data/images/cheeta.jpg")
-        val rt = renderTarget(width, height) {
-            colorBuffer()
+        val img = loadImage("data/images/pm5544.png")
+
+        val rt by Once {
+            renderTarget(width, height) {
+                colorBuffer()
+            }
         }
 
         val s0 by Once {
-            mapper(Rectangle.fromCenter(drawer.bounds.center, 250.0, 250.0).contour) { rt.colorBuffer(0) }
+            mapper(Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
+        }
+
+        val s1 by Once {
+            mapper(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
         }
 
 
-
-        uiManager.elements.addAll(listOf(s0))
+        uiManager.elements.addAll(listOf(s0, s1))
 
         extend {
 
@@ -49,6 +55,7 @@ fun main() = application {
             }
 
             s0.draw(drawer)
+            s1.draw(drawer)
 
         }
     }
@@ -301,9 +308,34 @@ class MapperElement(initialContour: ShapeContour, val mode: MapperMode = MapperM
 
         image?.let {
             drawer.isolated {
+
+                drawer.fill = ColorRGBa.WHITE
+                drawer.shadeStyle = shadeStyle {
+                    fragmentTransform = """
+                        vec2 texCoord = c_boundsPosition.xy;
+                        vec2 size = textureSize(p_img, 0);
+                        
+                        float boundsAR = c_boundsSize.x / c_boundsSize.y;
+                        float texAR = size.x / size.y;
+                        
+                        texCoord.y = 1.0 - texCoord.y;
+                        
+                        if (texAR > boundsAR) {
+                            float cropFactor = boundsAR / texAR;
+                            texCoord.x = (texCoord.x - 0.5) * cropFactor + 0.5;
+                        } else {
+                            float cropFactor = texAR / boundsAR;
+                            texCoord.y = (texCoord.y - 0.5) * cropFactor + 0.5;
+                        }
+                        
+                        x_fill = texture(p_img, texCoord);
+                        
+                    """.trimIndent()
+                    parameter("img", it)
+                }
+
                 drawer.shape(contour.shape)
-                drawer.drawStyle.blendMode = BlendMode.MULTIPLY
-                drawer.imageFit(it, contour.bounds, 0.5, 0.5, FitMethod.Cover)
+
             }
         }
 
