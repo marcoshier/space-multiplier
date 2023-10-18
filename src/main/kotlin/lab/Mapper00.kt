@@ -1,3 +1,5 @@
+package lab
+
 import lib.UIElementImpl
 import lib.UIManager
 import org.openrndr.Program
@@ -7,7 +9,6 @@ import org.openrndr.draw.Drawer
 import org.openrndr.draw.isolated
 import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.noise.Random
-import org.openrndr.extra.shapes.Arc
 import org.openrndr.extra.shapes.hobbyCurve
 import org.openrndr.math.Vector2
 import org.openrndr.shape.*

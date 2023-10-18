@@ -1,4 +1,6 @@
-import classes.mapperElement
+package lab
+
+import classes.MapperElement
 import lib.*
 import org.openrndr.*
 import org.openrndr.color.ColorHSLa
@@ -22,6 +24,15 @@ fun main() = application {
     configure {
         width = 1000
         height = 1000
+    }
+
+    fun mapperElement(contour: ShapeContour, f: (MapperElement.() -> ColorBuffer)? = null): MapperElement {
+        val el = MapperElement(contour)
+        if (f != null) {
+            el.image = f.invoke(el)
+        }
+
+        return el
     }
 
     oliveProgram {
@@ -61,4 +72,5 @@ fun main() = application {
     }
 
 }
+
 

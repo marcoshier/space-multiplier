@@ -36,13 +36,13 @@ fun main() = application {
         val img2 = loadImage("data/images/cheeta.jpg")
 
         val uiManager = UIManager(this)
-        val mapper = Mapper(uiManager, MapperMode.ADJUST) {
+        val pMapper = Mapper(uiManager, MapperMode.ADJUST) {
             mapperElement(Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
             mapperElement(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
             mapperElement(regularPolygon(5, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
         }
 
-        extend(mapper)
+        extend(pMapper)
 
         extend {
             drawer.isolatedWithTarget(rt) {

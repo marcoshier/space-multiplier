@@ -1,15 +1,14 @@
+package lab
+
 import lib.UIElementImpl
 import lib.UIManager
 import lib.points
 import org.openrndr.application
-import org.openrndr.color.ColorHSLa
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.noise.uniform
 import org.openrndr.extra.olive.oliveProgram
-import org.openrndr.extra.shapes.alphaShape
-import org.openrndr.math.Vector2
 import org.openrndr.shape.*
 import kotlin.random.Random
 

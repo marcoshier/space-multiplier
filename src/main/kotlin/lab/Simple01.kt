@@ -1,3 +1,5 @@
+package lab
+
 import lib.UIElementImpl
 import lib.UIManager
 import lib.points

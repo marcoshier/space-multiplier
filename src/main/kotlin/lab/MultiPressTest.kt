@@ -1,3 +1,5 @@
+package lab
+
 import org.openrndr.KEY_LEFT_SHIFT
 import org.openrndr.KEY_RIGHT_SHIFT
 import org.openrndr.application

@@ -1,3 +1,5 @@
+package lab
+
 import lib.*
 import org.openrndr.*
 import org.openrndr.color.ColorRGBa

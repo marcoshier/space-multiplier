@@ -1,3 +1,5 @@
+package lab
+
 import lib.*
 import org.openrndr.*
 import org.openrndr.color.ColorRGBa
@@ -5,15 +7,9 @@ import org.openrndr.draw.Drawer
 import org.openrndr.draw.isolated
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
-import org.openrndr.extra.compositor.compose
-import org.openrndr.extra.compositor.post
-import org.openrndr.extra.fx.Post
-import org.openrndr.extra.fx.blur.ApproximateGaussianBlur
-import org.openrndr.extra.gui.addTo
 import org.openrndr.extra.noise.uniform
 import org.openrndr.extra.olive.Once
 import org.openrndr.extra.olive.oliveProgram
-import org.openrndr.extra.shapes.RoundedRectangle
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*

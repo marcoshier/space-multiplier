@@ -370,11 +370,3 @@ class MapperElement(initialContour: ShapeContour): UIElementImpl() {
 }
 
 
-fun mapperElement(contour: ShapeContour, f: (MapperElement.() -> ColorBuffer)? = null): MapperElement {
-    val el = MapperElement(contour)
-    if (f != null) {
-        el.image = f.invoke(el)
-    }
-
-    return el
-}

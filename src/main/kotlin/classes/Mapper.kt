@@ -9,7 +9,6 @@ import org.openrndr.Extension
 import org.openrndr.Program
 import org.openrndr.draw.ColorBuffer
 import org.openrndr.draw.Drawer
-import org.openrndr.draw.VertexFormat
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour

@@ -1,10 +1,9 @@
-import classes.mapperElement
+import classes.Mapper
 import lib.UIManager
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.fx.Post
 import org.openrndr.extra.fx.patterns.Checkers
-import org.openrndr.extra.gui.GUI
 import org.openrndr.extra.viewbox.viewBox
 
 fun main() = application {
@@ -15,7 +14,6 @@ fun main() = application {
     }
 
     program {
-       val uiManager = UIManager(program)
        val bg = viewBox(drawer.bounds) {
             extend(Post()) {
                 val c = Checkers().apply {
@@ -29,15 +27,14 @@ fun main() = application {
             }
         }
 
-        extend(GUI())
+        val uiManager = UIManager(program)
+        val mapper = Mapper(uiManager) {
+            mapperElement(drawer.bounds.offsetEdges(-10.0).contour) { bg.result }
+        }
 
-        val mapper = mapperElement(drawer.bounds.offsetEdges(-10.0).contour)
-        uiManager.elements.add(mapper)
-
+        extend(mapper)
         extend {
-
             bg.update()
-            mapper.draw(drawer)
         }
     }
 
