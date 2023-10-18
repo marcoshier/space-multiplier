@@ -39,17 +39,11 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
         for ((i, l) in segmentLists) {
             val me = elements.getOrNull(i)
 
-            if (me == null) {
-                mapperElement(ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)) {
-                    images[i]
-                }
+            if (me != null) {
+                elements[i].contour = ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)
             }
-
-            elements[i].contour = ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)
-            elements[i].image = images[i]
         }
     }
-
 
     fun fromFile(file:File) {
         println("from file")
@@ -74,8 +68,6 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
         file.writeText(Gson().toJson(toObject()))
     }
 
-    var listenToProduceAssetsEvent = true
-
     fun mapperElement(contour: ShapeContour, f: MapperElement.() -> ColorBuffer): MapperElement {
         val m = MapperElement(contour)
         m.image = f.invoke(m)
@@ -88,6 +80,7 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
     }
 
     override fun setup(program: Program) {
+        images.clear()
         elements.clear()
         uiManager.elements.clear()
 
@@ -99,22 +92,19 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
            fromFile(mapperState)
         }
 
-        program.produceAssets.listen {
-            if (listenToProduceAssetsEvent) {
-                val folderFile = File(defaultPath)
-                val targetFile = File(defaultPath, "${it.assetMetadata.assetBaseName}.json")
-                if (folderFile.exists() && folderFile.isDirectory) {
-                    logger.info("Saving parameters to '${targetFile.absolutePath}")
-                    toFile(targetFile)
+        program.mouse.buttonUp.listen {
+            println("clickd")
+            val folder = File(defaultPath)
+            if (folder.exists() && folder.isDirectory) {
+                toFile(File(defaultPath, "${program.name}-latest.json"))
+            } else {
+                if (folder.mkdirs()) {
+                    toFile(File(defaultPath, "${program.name}-latest.json"))
                 } else {
-                    if (folderFile.mkdirs()) {
-                        logger.info("Saving parameters to '${targetFile.absolutePath}")
-                        toFile(targetFile)
-                    } else {
-                        logger.error { "Could not save parameters because could not create directory ${folderFile.absolutePath}" }
-                    }
+                    error("Could not persist Mapper state because could not create directory ${folder.absolutePath}")
                 }
             }
+
         }
     }
 

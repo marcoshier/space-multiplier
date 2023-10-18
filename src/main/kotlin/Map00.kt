@@ -10,6 +10,7 @@ import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.extra.shapes.regularPolygon
 import org.openrndr.math.Vector2
 import org.openrndr.shape.*
+import java.io.File
 
 fun main() = application {
 
@@ -35,15 +36,17 @@ fun main() = application {
         val img = loadImage("data/images/pm5544.png")
         val img2 = loadImage("data/images/cheeta.jpg")
 
+
         val uiManager = UIManager(this)
         val pMapper = Mapper(uiManager, MapperMode.ADJUST) {
             mapperElement(Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
+            mapperElement(regularPolygon(8, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
             mapperElement(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement(regularPolygon(5, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
+            mapperElement(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
+            mapperElement(regularPolygon(3, Vector2(100.0, 100.0), 200.0)) { rt.colorBuffer(0) }
         }
 
         extend(pMapper)
-
         extend {
             drawer.isolatedWithTarget(rt) {
                 drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
