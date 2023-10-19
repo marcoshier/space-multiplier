@@ -39,11 +39,10 @@ fun main() = application {
 
         val uiManager = UIManager(this)
         val pMapper = Mapper(uiManager, MapperMode.ADJUST) {
-            mapperElement(Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement(regularPolygon(8, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
-            mapperElement(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement(Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement(regularPolygon(3, Vector2(100.0, 100.0), 200.0)) { rt.colorBuffer(0) }
+            mapperElement("three", Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
+            mapperElement("one", regularPolygon(8, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
+            mapperElement("four", regularPolygon(5, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
+            mapperElement("two", Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
         }
 
         extend(pMapper)

@@ -19,8 +19,7 @@ private val logger = KotlinLogging.logger { }
 class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() -> Unit): Extension {
     override var enabled: Boolean = true
 
-    var images = mutableListOf<ColorBuffer>()
-    var elements = mutableListOf<MapperElement>()
+    var elements = linkedMapOf<String, MapperElement>()
 
     val defaultPath = "mapper-parameters"
 
@@ -35,12 +34,10 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
         return Segment(from.start, from.control, from.end)
     }
 
-    fun fromObject(segmentLists: Map<Int, List<SegmentRef>>) {
+    fun fromObject(segmentLists: Map<String, List<SegmentRef>>) {
         for ((i, l) in segmentLists) {
-            val me = elements.getOrNull(i)
-
-            if (me != null) {
-                elements[i].contour = ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)
+            elements[i]?.let {
+                it.contour = ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)
             }
         }
     }
@@ -48,8 +45,8 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
     fun fromFile(file:File) {
         println("from file")
         val json = file.readText()
-        val typeToken = object : TypeToken<Map<Int, List<SegmentRef>>>() {}
-        val labeledValues: Map<Int, List<SegmentRef>> = try {
+        val typeToken = object : TypeToken<Map<String, List<SegmentRef>>>() {}
+        val labeledValues: Map<String, List<SegmentRef>> = try {
             Gson().fromJson(json, typeToken.type)
         } catch (e: JsonSyntaxException) {
             println("could not parse json: $json")
@@ -59,8 +56,8 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
         fromObject(labeledValues)
     }
 
-    fun toObject(): Map<Int, List<SegmentRef>> {
-        return elements.withIndex().associate { (i, it) -> i to it.contour.segments.map { s -> refFromSegment(s) } }
+    fun toObject(): Map<String, List<SegmentRef>> {
+        return elements.mapValues { it.value.contour.segments.map { s -> refFromSegment(s) } }
     }
 
     fun toFile(file: File) {
@@ -68,29 +65,25 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
         file.writeText(Gson().toJson(toObject()))
     }
 
-    fun mapperElement(contour: ShapeContour, f: MapperElement.() -> ColorBuffer): MapperElement {
-        val m = MapperElement(contour)
-        m.image = f.invoke(m)
+    fun mapperElement(id: String, contour: ShapeContour, f: () -> ColorBuffer) {
+        val cb = f()
 
-        elements.add(m)
-        images.add(m.image!!)
+        val m = elements.getOrPut(id) { MapperElement(contour).apply { image = cb } }
         uiManager.elements.add(m)
-
-        return m
     }
 
     override fun setup(program: Program) {
-        images.clear()
-        elements.clear()
         uiManager.elements.clear()
 
         builder()
-        println("setup ${elements.size} ${uiManager.elements.size}")
 
         val mapperState = File(defaultPath, "${program.name}-latest.json")
         if (mapperState.exists()) {
-           fromFile(mapperState)
+            fromFile(mapperState)
+        } else {
+            toFile(mapperState)
         }
+
 
         program.mouse.buttonUp.listen {
             println("clickd")
@@ -109,7 +102,7 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
     }
 
     override fun beforeDraw(drawer: Drawer, program: Program) {
-        elements.forEach { it.draw(drawer) }
+        elements.forEach { it.value.draw(drawer) }
     }
 
 

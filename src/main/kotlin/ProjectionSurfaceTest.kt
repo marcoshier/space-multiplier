@@ -29,7 +29,7 @@ fun main() = application {
 
         val uiManager = UIManager(program)
         val mapper = Mapper(uiManager) {
-            mapperElement(drawer.bounds.offsetEdges(-10.0).contour) { bg.result }
+            mapperElement("one", drawer.bounds.offsetEdges(-10.0).contour) { bg.result }
         }
 
         extend(mapper)
