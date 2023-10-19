@@ -16,9 +16,10 @@ import java.io.File
 
 private val logger = KotlinLogging.logger { }
 
-class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() -> Unit): Extension {
+class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() -> Unit): Extension {
     override var enabled: Boolean = true
 
+    lateinit var uiManager: UIManager
     var elements = linkedMapOf<String, MapperElement>()
 
     val defaultPath = "mapper-parameters"
@@ -73,6 +74,7 @@ class Mapper(val uiManager: UIManager, val mode: MapperMode = MapperMode.ADJUST,
     }
 
     override fun setup(program: Program) {
+        uiManager = UIManager(program)
         uiManager.elements.clear()
 
         builder()

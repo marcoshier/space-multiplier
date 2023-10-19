@@ -37,8 +37,7 @@ fun main() = application {
         val img2 = loadImage("data/images/cheeta.jpg")
 
 
-        val uiManager = UIManager(this)
-        val pMapper = Mapper(uiManager, MapperMode.ADJUST) {
+        val pMapper = Mapper(MapperMode.ADJUST) {
             mapperElement("three", Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
             mapperElement("one", regularPolygon(8, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
             mapperElement("four", regularPolygon(5, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }

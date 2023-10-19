@@ -28,7 +28,7 @@ fun main() = application {
         }
 
         val uiManager = UIManager(program)
-        val mapper = Mapper(uiManager) {
+        val mapper = Mapper() {
             mapperElement("one", drawer.bounds.offsetEdges(-10.0).contour) { bg.result }
         }
 
