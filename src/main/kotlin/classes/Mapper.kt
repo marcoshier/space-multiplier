@@ -88,18 +88,9 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
 
 
         program.mouse.buttonUp.listen {
-            println("clickd")
-            val folder = File(defaultPath)
-            if (folder.exists() && folder.isDirectory) {
+            if (mapperState.exists()) {
                 toFile(File(defaultPath, "${program.name}-latest.json"))
-            } else {
-                if (folder.mkdirs()) {
-                    toFile(File(defaultPath, "${program.name}-latest.json"))
-                } else {
-                    error("Could not persist Mapper state because could not create directory ${folder.absolutePath}")
-                }
             }
-
         }
     }
 
@@ -107,18 +98,4 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
         elements.forEach { it.value.draw(drawer) }
     }
 
-
-    override fun shutdown(program: Program) {
-        val folder = File(defaultPath)
-        if (folder.exists() && folder.isDirectory) {
-            toFile(File(defaultPath, "${program.name}-latest.json"))
-        } else {
-            if (folder.mkdirs()) {
-                toFile(File(defaultPath, "${program.name}-latest.json"))
-            } else {
-                error("Could not persist Mapper state because could not create directory ${folder.absolutePath}")
-            }
-        }
-
-    }
 }
