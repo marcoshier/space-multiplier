@@ -7,8 +7,10 @@ import lib.UIManager
 import mu.KotlinLogging
 import org.openrndr.Extension
 import org.openrndr.Program
+import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.ColorBuffer
 import org.openrndr.draw.Drawer
+import org.openrndr.draw.isolated
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
@@ -100,7 +102,10 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
     }
 
     override fun beforeDraw(drawer: Drawer, program: Program) {
-        elements.forEach { it.value.draw(drawer) }
+        elements.values.forEach {
+            val el = if (uiManager.activeElement == null) elements.values.first() else uiManager.activeElement
+            it.draw(drawer, isActive = it == el)
+        }
     }
 
 }

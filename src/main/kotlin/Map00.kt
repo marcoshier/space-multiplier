@@ -5,6 +5,7 @@ import org.openrndr.*
 import org.openrndr.color.ColorHSLa
 import org.openrndr.draw.*
 import org.openrndr.extra.imageFit.imageFit
+import org.openrndr.extra.olive.OliveScriptHost
 import org.openrndr.extra.olive.Once
 import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.extra.shapes.regularPolygon
@@ -20,7 +21,7 @@ fun main() = application {
         height = 1000
     }
 
-    oliveProgram {
+    oliveProgram(scriptHost = OliveScriptHost.JSR223) {
 
         val rt by Once {
             renderTarget(width, height) {
@@ -40,6 +41,7 @@ fun main() = application {
 
         val pMapper = Mapper(MapperMode.PRODUCTION) {
             mapperElement("three", Rectangle.fromCenter(drawer.bounds.center, 350.0, 260.0).contour, feather = 0.1) { rt.colorBuffer(0) }
+            mapperElement("four", Circle(drawer.bounds.center, 350.0).contour) { rt2.colorBuffer(0) }
         }
 
         extend(pMapper)
