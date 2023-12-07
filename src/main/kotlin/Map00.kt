@@ -38,18 +38,15 @@ fun main() = application {
         val img2 = loadImage("data/images/cheeta.jpg")
 
 
-        val pMapper = Mapper(MapperMode.ADJUST) {
-            mapperElement("three", Rectangle.fromCenter(drawer.bounds.center, 250.0, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement("one", regularPolygon(8, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
-            mapperElement("four", regularPolygon(5, Vector2(100.0, 100.0), 200.0)) { rt2.colorBuffer(0) }
-            mapperElement("two", Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
-            mapperElement("five", Circle(drawer.bounds.center, 260.0).contour) { rt.colorBuffer(0) }
+        val pMapper = Mapper(MapperMode.PRODUCTION) {
+            mapperElement("three", Rectangle.fromCenter(drawer.bounds.center, 350.0, 260.0).contour, feather = 0.1) { rt.colorBuffer(0) }
         }
 
         extend(pMapper)
         extend {
 
             drawer.isolatedWithTarget(rt) {
+                drawer.rotate(seconds)
                 drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
                 drawer.imageFit(img, drawer.bounds)
             }
@@ -58,6 +55,7 @@ fun main() = application {
                 drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 180.0).toRGBa())
                 drawer.imageFit(img2, drawer.bounds)
             }
+
         }
     }
 

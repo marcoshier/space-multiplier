@@ -2,24 +2,21 @@ package lib
 
 import mu.KotlinLogging
 import org.openrndr.*
-import org.openrndr.color.ColorHSLa
-import org.openrndr.color.ColorRGBa
-import org.openrndr.draw.Drawer
-import org.openrndr.draw.isolated
 import org.openrndr.events.Event
-import org.openrndr.extra.noise.uniform
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Rectangle
 import org.openrndr.shape.Shape
 import org.openrndr.shape.ShapeContour
 import org.openrndr.shape.contains
-import kotlin.random.Random
+
+// UI Manager with shape as action bounds, button pressed listener and devoid of touch functionality
 
 interface UIElement: MouseEvents {
     val zOrder: Int
-    val actionBounds: ShapeContour
+    val actionBounds: List<ShapeContour>
     val visible: Boolean
     var shiftPressed: Boolean
+    var tabPressed: Boolean
     val clicked: Event<MouseEvent>
     val doubleClicked: Event<MouseEvent>
 }
@@ -27,9 +24,10 @@ interface UIElement: MouseEvents {
 open class UIElementImpl : UIElement {
 
     override var zOrder = 0
-    override var actionBounds = Rectangle(0.0, 0.0, 100.0, 100.0).contour
+    override var actionBounds = listOf(Rectangle(0.0, 0.0, 100.0, 100.0).contour)
     override var visible = true
     override var shiftPressed = false
+    override var tabPressed = false
 
     override val buttonDown: Event<MouseEvent> = Event("ui-element-button-down")
     override val buttonUp: Event<MouseEvent> = Event("ui-element-button-up")
@@ -74,7 +72,7 @@ class UIManager(val program: Program) {
         program.mouse.buttonDown.listen { event ->
             lastMousePosition = event.position
             if (!event.propagationCancelled) {
-                for (e in elements.filter { it.visible && it.actionBounds.contains(event.position) }.sortedBy { it.zOrder }) {
+                for (e in elements.filter { it.visible && it.actionBounds.any { ab -> ab.contains(event.position) } }.sortedBy { it.zOrder }) {
                     e.buttonDown.trigger(event)
                     if (event.propagationCancelled) {
                         requestDraw()
@@ -147,11 +145,17 @@ class UIManager(val program: Program) {
             if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
                 elements.onEach { e -> e.shiftPressed = true }
             }
+            if(it.key == KEY_TAB) {
+                elements.onEach { e -> e.tabPressed = true }
+            }
         }
 
         program.keyboard.keyUp.listen {
             if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
                 elements.onEach { e -> e.shiftPressed = false }
+            }
+            if(it.key == KEY_TAB) {
+                elements.onEach { e -> e.tabPressed = false }
             }
         }
     }

@@ -13,6 +13,7 @@ import org.openrndr.math.Vector2
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
 import java.io.File
+import kotlin.math.log
 
 private val logger = KotlinLogging.logger { }
 
@@ -35,19 +36,20 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
         return Segment(from.start, from.control, from.end)
     }
 
-    fun fromObject(segmentLists: Map<String, List<SegmentRef>>) {
+    fun fromObject(segmentLists: Map<String, List<List<SegmentRef>>>) {
         for ((i, l) in segmentLists) {
             elements[i]?.let {
-                it.contour = ShapeContour.fromSegments(l.map { v -> refToSegment(v) }, true)
+                it.mask = MapperContour(ShapeContour.fromSegments(l[0].map { v -> refToSegment(v) }, true))
+                it.textureQuad = MapperContour(ShapeContour.fromSegments(l[1].map { v -> refToSegment(v) }, true))
             }
         }
     }
 
     fun fromFile(file:File) {
-        println("from file")
+        logger.info { "reading from file ${file.name}" }
         val json = file.readText()
-        val typeToken = object : TypeToken<Map<String, List<SegmentRef>>>() {}
-        val labeledValues: Map<String, List<SegmentRef>> = try {
+        val typeToken = object : TypeToken<Map<String, List<List<SegmentRef>>>>() {}
+        val labeledValues: Map<String, List<List<SegmentRef>>> = try {
             Gson().fromJson(json, typeToken.type)
         } catch (e: JsonSyntaxException) {
             println("could not parse json: $json")
@@ -56,20 +58,23 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
 
         fromObject(labeledValues)
     }
-
-    fun toObject(): Map<String, List<SegmentRef>> {
-        return elements.mapValues { it.value.contour.segments.map { s -> refFromSegment(s) } }
+    fun toObject(): Map<String, List<List<SegmentRef>>> {
+        return elements.mapValues {
+            listOf(
+                it.value.mask.cSegments.map { s -> refFromSegment(s) },
+                it.value.textureQuad.cSegments.map { s -> refFromSegment(s) })
+        }
     }
 
     fun toFile(file: File) {
-        println("to file")
         file.writeText(Gson().toJson(toObject()))
+        logger.info { "saved to file ${file.name}" }
     }
 
-    fun mapperElement(id: String, contour: ShapeContour, f: () -> ColorBuffer) {
+    fun mapperElement(id: String, contour: ShapeContour, feather: Double = 0.0, f: () -> ColorBuffer) {
         val cb = f()
 
-        val m = elements.getOrPut(id) { MapperElement(contour).apply { image = cb } }
+        val m = elements.getOrPut(id) { MapperElement(contour, feather).apply { texture = cb } }
         uiManager.elements.add(m)
     }
 

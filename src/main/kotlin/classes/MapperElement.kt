@@ -1,209 +1,181 @@
 package classes
 
-import lib.UIElementImpl
-import lib.points
-import lib.sortedClockwise
-import lib.uv
+import lib.*
 import org.openrndr.MouseButton
 import org.openrndr.MouseEventType
 import org.openrndr.color.ColorRGBa
-import org.openrndr.draw.ColorBuffer
-import org.openrndr.draw.Drawer
-import org.openrndr.draw.isolated
-import org.openrndr.draw.shadeStyle
+import org.openrndr.draw.*
+import org.openrndr.extra.color.presets.FUCHSIA
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
-import org.openrndr.extra.noise.uniform
-import org.openrndr.math.Polar
+import org.openrndr.extra.shapes.adjust.adjustContour
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
-import org.openrndr.shape.Segment
-import org.openrndr.shape.ShapeContour
-import org.openrndr.shape.contour
-import org.openrndr.shape.offset
-import kotlin.math.atan2
-import kotlin.random.Random
+import org.openrndr.shape.*
 
-
-class MapperElement(initialContour: ShapeContour): UIElementImpl() {
-
+class MapperContour(initialContour: ShapeContour) {
     var contour = initialContour
         set(value) {
+            println("set contour")
             field = if (!value.closed) value.close() else value
 
             cSegments = value.segments.toMutableList()
             cPoints = value.points()
             cControls = value.segments.map { it.control.toList() }.flatten()
             actionablePoints = cPoints + cControls
-
-            actionBounds = ShapeContour.fromPoints(actionablePoints.sortedClockwise(), true).offset(proximityThreshold * 2)
         }
 
-    var image: ColorBuffer? = null
+    var cSegments = contour.segments.toMutableList()
+    var cPoints = contour.points()
+    var cControls = contour.segments.map { it.control.toList() }.flatten()
+    var actionablePoints = (cPoints + cControls)
+}
+
+
+class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElementImpl() {
+
+    var mask = MapperContour(initialMask)
+        set(value) {
+            field = value
+            calculateBounds()
+        }
+    var textureQuad = MapperContour(initialMask)
+        set(value) {
+            field = value
+            calculateBounds()
+        }
+
+    var texture: ColorBuffer? = null
     var mapperMode: MapperMode = MapperMode.ADJUST
 
-    private var cSegments = contour.segments.toMutableList()
-    private var cPoints = contour.points()
-    private var cControls = contour.segments.map { it.control.toList() }.flatten()
-    private var actionablePoints = (cPoints + cControls)
+    var feather = feather
+        set(value) {
+            field = value.coerceIn(0.0, 1.0)
+        }
 
     private val proximityThreshold = 9.0
 
     private fun movePoint(mouseP: Vector2) {
-        val activePoint = cPoints.getOrNull(activePointIdx)
+        activeContour.run {
+            val activePoint = cPoints.getOrNull(activePointIdx)
 
+            if (activePoint != null) {
+                val i = cPoints.indexOf(activePoint)
 
-        if (activePoint != null) {
-            val segment = contour.nearest(activePoint).segment
-            val segmentIdx = cSegments.indexOf(segment)
-
-            val saIdx = (segmentIdx + 1).mod(cSegments.size)
-            val sbIdx = (segmentIdx - 1).mod(cSegments.size)
-
-            val d = mouseP - activePoint
-
-            if (activePoint == segment.start) {
-                val cl0 = segment.control
-                segment.control.getOrNull(0)?.let { cl0[0] = it + d }
-                cSegments[segmentIdx] = Segment(mouseP, cl0, segment.end)
-
-                val cl1 = cSegments[sbIdx].control
-                cSegments[sbIdx].control.getOrNull(1)?.let { cl1[1] = it + d }
-                cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cl1, mouseP)
-            } else {
-                val cl0 = segment.control
-                segment.control.getOrNull(1)?.let { cl0[1] = it + d }
-                cSegments[segmentIdx] = Segment(segment.start, cl0, mouseP)
-
-                val cl1 = cSegments[saIdx].control
-                cSegments[saIdx].control.getOrNull(0)?.let { cl1[0] = it + d }
-                cSegments[saIdx] = Segment(mouseP, cl1, cSegments[saIdx].end)
-            }
-
-            contour = contour {
-                for (s in cSegments) {
-                    segment(s)
+                contour = adjustContour(contour) {
+                    selectVertex(i)
+                    vertex.moveBy(mouseP - activePoint)
                 }
-            }.close()
+            }
         }
     }
 
     private fun moveControlPoint(mouseP: Vector2) {
-        val activePoint = cControls.getOrNull(activeControlPointIdx)
-        val segment = cSegments.firstOrNull { it.control.any { c -> c == activePoint } }
+        activeContour.run {
 
-        if (activePoint != null && segment != null) {
-            val segmentIdx = cSegments.indexOf(segment)
+            val activePoint = cControls.getOrNull(activeControlPointIdx)
 
-            val sbIdx = (segmentIdx - 1).mod(cSegments.size)
-            val saIdx = (segmentIdx + 1).mod(cSegments.size)
+            val segment = cSegments.firstOrNull { it.control.any { c -> c == activePoint } }
 
-            if (activePoint == segment.control[0]) {
-                cSegments[segmentIdx] = Segment(segment.start, mouseP, segment.control[1], segment.end)
-                if (shiftPressed) cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control[0], segment.control[0].rotate(180.0, segment.start), cSegments[sbIdx].end)
-            } else {
-                cSegments[segmentIdx] = Segment(segment.start, segment.control[0], mouseP,  segment.end)
-                if (shiftPressed) cSegments[saIdx] = Segment(cSegments[saIdx].start, segment.control[1].rotate(180.0, segment.end), cSegments[saIdx].control[1], cSegments[saIdx].end)
-            }
+            if (activePoint != null && segment != null) {
+                val segmentIdx = cSegments.indexOf(segment)
 
-            contour = contour {
-                for (s in cSegments) {
-                    segment(s)
+                val sbIdx = (segmentIdx - 1).mod(cSegments.size)
+                val saIdx = (segmentIdx + 1).mod(cSegments.size)
+
+                if (activePoint == segment.control[0]) {
+                    cSegments[segmentIdx] = Segment(segment.start, mouseP, segment.control[1], segment.end)
+                    if (shiftPressed) cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control[0], segment.control[0].rotate(180.0, segment.start), cSegments[sbIdx].end)
+                } else {
+                    cSegments[segmentIdx] = Segment(segment.start, segment.control[0], mouseP,  segment.end)
+                    if (shiftPressed) cSegments[saIdx] = Segment(cSegments[saIdx].start, segment.control[1].rotate(180.0, segment.end), cSegments[saIdx].control[1], cSegments[saIdx].end)
                 }
-            }.close()
 
+                contour = contour {
+                    for (s in cSegments) {
+                        segment(s)
+                    }
+                }.close()
+            }
         }
     }
 
     private fun moveSegment(mouseP: Vector2) {
-        val activeSegment = cSegments.getOrNull(activeSegmentIdx)
+        activeContour.run {
+            val activeSegment = cSegments.getOrNull(activeSegmentIdx)
 
-        if (activeSegment != null) {
-            val sbIdx = (activeSegmentIdx - 1).mod(cSegments.size)
-            val saIdx = (activeSegmentIdx + 1).mod(cSegments.size)
+            if (activeSegment != null) {
+                val sbIdx = (activeSegmentIdx - 1).mod(cSegments.size)
+                val saIdx = (activeSegmentIdx + 1).mod(cSegments.size)
 
-            val d = mouseP - activeSegment.position(activeSegmentT)
+                val d = mouseP - activeSegment.position(activeSegmentT)
 
-            cSegments[activeSegmentIdx] = cSegments[activeSegmentIdx].transform(transform { translate(d) })
-            cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control, cSegments[activeSegmentIdx].start)
-            cSegments[saIdx] = Segment(cSegments[activeSegmentIdx].end, cSegments[saIdx].control, cSegments[saIdx].end)
+                cSegments[activeSegmentIdx] = cSegments[activeSegmentIdx].transform(transform { translate(d) })
+                cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control, cSegments[activeSegmentIdx].start)
+                cSegments[saIdx] = Segment(cSegments[activeSegmentIdx].end, cSegments[saIdx].control, cSegments[saIdx].end)
 
-            contour = contour {
-                for (s in cSegments) {
-                    segment(s)
-                }
-            }.close()
+                contour = contour {
+                    for (s in cSegments) {
+                        segment(s)
+                    }
+                }.close()
+            }
+
         }
+
     }
 
     private fun moveShape(mouseP: Vector2) {
-        contour = contour.transform(transform {
-            translate(mouseP - actionBounds.bounds.position(activeAnchor))
-        })
+        activeContour.run {
+            if (mouseP in contour.offset(proximityThreshold * 2)) {
+                val b = contour.bounds
+                contour = contour.transform(transform {
+                    translate(mouseP - b.position(activeAnchor))
+                })
+            }
+        }
     }
 
     private fun addPoint(mouseP: Vector2) {
-        val nearest = contour.nearest(mouseP)
+        if (activeContour == mask) {
+            activeContour.run {
+                val nearest = contour.nearest(mouseP)
 
-        if (mouseP.distanceTo(nearest.position) < proximityThreshold) {
+                if (mouseP.distanceTo(nearest.position) < proximityThreshold) {
+                    val segmentRef = nearest.segment
+                    val idx = cSegments.indexOf(segmentRef)
 
-            val segmentRef = nearest.segment
-            val idx = cSegments.indexOf(segmentRef)
+                    println(idx)
 
-            val split = segmentRef.split(nearest.segmentT)
-
-            val cl0 = Array(2) { Vector2.ZERO }
-            cl0[0] = split[0].control.getOrElse(0) { split[0].start }
-            cl0[1] = split[0].control.getOrElse(1)  {
-                val p = split[0].end
-                val t = atan2(p.y - contour.bounds.center.y, p.x - contour.bounds.center.x) / 4
-                Polar(Math.toDegrees(t) - 90.0, 10.0).cartesian + p
-            }
-
-            val cl1 = Array(2) { Vector2.ZERO }
-            cl1[0] = split[1].control.getOrElse(0) {
-                val p = split[1].start
-                val t = atan2(p.y - contour.bounds.center.y, p.x - contour.bounds.center.x) / 4
-                Polar(Math.toDegrees(t) + 90.0, 10.0).cartesian + p
-            }
-            cl1[1] =  split[1].control.getOrElse(1) { split[1].end }
-
-            cSegments[idx] = Segment(split[0].start, cl0, split[0].end)
-            cSegments.add(idx + 1, Segment(split[1].start, cl1, split[1].end))
-
-            contour = contour {
-                for (s in cSegments) {
-                    segment(s)
+                    contour = adjustContour(contour) {
+                        selectEdge(idx)
+                        edge.splitAt(nearest.segmentT)
+                    }
                 }
-            }.close()
+            }
         }
+
     }
 
     private fun removePoint(mouseP: Vector2) {
-        val pointInRange = cPoints.firstOrNull { it.distanceTo(mouseP) < proximityThreshold }
+        if (activeContour == mask) {
+            activeContour.run {
+                val pointInRange = cPoints.firstOrNull { it.distanceTo(mouseP) < proximityThreshold }
 
-        pointInRange?.let {
-            val s0 = cSegments.first { s -> s.end == it }
-            val s1 = cSegments.first { s -> s.start == it }
+                if (pointInRange != null) {
+                    val i = cPoints.indexOf(pointInRange)
 
-            val c = arrayOf(s0.start, s1.end)
-            s0.control.getOrNull(0)?.let { c[0] = it }
-            s1.control.getOrNull(1)?.let { c[1] = it }
-
-            val newSeg = Segment(s0.start, c, s1.end)
-
-            val segmentsCopy = cSegments
-            segmentsCopy[cSegments.indexOf(s0)] = newSeg
-            segmentsCopy.remove(s1)
-
-            contour = contour {
-                for (s in segmentsCopy) {
-                    segment(s)
+                    contour = adjustContour(contour) {
+                        selectVertex(i)
+                        vertex.remove()
+                    }
                 }
-            }.close()
-
+            }
         }
     }
+
+
+    private var activeContour = mask
 
     private var activePointIdx = -1
     private var activeControlPointIdx = -1
@@ -212,54 +184,76 @@ class MapperElement(initialContour: ShapeContour): UIElementImpl() {
     private var activeAnchor = Vector2.ZERO
     private var lastMouseEvent = MouseEventType.BUTTON_UP
 
+
+    private fun calculateBounds() {
+        actionBounds = listOf(
+            mask.contour.offset(proximityThreshold * 2),
+            textureQuad.contour.offset(proximityThreshold * 2)
+        )
+    }
+
     init {
+        calculateBounds()
         visible = mapperMode != MapperMode.PRODUCTION
-        actionBounds = ShapeContour.fromPoints(actionablePoints.sortedClockwise(), true).offset(proximityThreshold * 2)
 
         buttonDown.listen {
             it.cancelPropagation()
             lastMouseEvent = it.type
 
-            val activePoint = actionablePoints.firstOrNull { ap -> isInRange(ap, it.position) }
+            activeContour = if (tabPressed) mask else textureQuad
 
-            if (activePoint != null) {
-                if (activePoint in cPoints) {
-                    val idx = cPoints.indexOf(cPoints.minBy { p -> p.distanceTo(it.position) })
-                    activePointIdx = idx
-                } else if (activePoint in cControls) {
-                    val idx = cControls.indexOf(cControls.minBy { p -> p.distanceTo(it.position) })
-                    activeControlPointIdx = idx
-                }
-            } else {
-                val nearest = contour.nearest(it.position)
-                if (it.position.distanceTo(nearest.position) < proximityThreshold) {
-                    activeSegmentIdx = cSegments.indexOf(nearest.segment)
-                    activeSegmentT = nearest.segmentT
+            activeContour.run {
+                val b = contour.bounds
+                val activePoint = actionablePoints.firstOrNull { ap -> isInRange(ap, it.position) }
+
+                if (activePoint != null) {
+                    if (activePoint in cPoints) {
+                        val idx = cPoints.indexOf(cPoints.minBy { p -> p.distanceTo(it.position) })
+                        activePointIdx = idx
+                    } else if (activePoint in cControls) {
+                        val idx = cControls.indexOf(cControls.minBy { p -> p.distanceTo(it.position) })
+                        activeControlPointIdx = idx
+                    }
                 } else {
-                    activeAnchor = actionBounds.bounds.uv(it.position)
+                    val nearest = contour.nearest(it.position)
+                    if (it.position.distanceTo(nearest.position) < proximityThreshold) {
+                        activeSegmentIdx = cSegments.indexOf(nearest.segment)
+                        activeSegmentT = nearest.segmentT
+                    } else {
+                        activeAnchor = b.uv(it.position)
+                    }
                 }
+
             }
 
+
+            calculateBounds()
         }
 
         buttonUp.listen {
             it.cancelPropagation()
 
-            if (lastMouseEvent == MouseEventType.BUTTON_DOWN) {
-                if (it.button == MouseButton.LEFT) {
-                    addPoint(it.position)
-                } else if (it.button == MouseButton.RIGHT) {
-                    if (cSegments.size > 2) {
-                        removePoint(it.position)
+            activeContour.run {
+                if (lastMouseEvent == MouseEventType.BUTTON_DOWN) {
+                    if (it.button == MouseButton.LEFT) {
+                        addPoint(it.position)
+                    } else if (it.button == MouseButton.RIGHT) {
+                        if (cSegments.size > 3) {
+                            removePoint(it.position)
+                        }
                     }
                 }
+
             }
 
+            activeContour = mask
             activePointIdx = -1
             activeControlPointIdx = -1
             activeSegmentIdx = -1
             activeSegmentT = 0.5
             lastMouseEvent = it.type
+
+            calculateBounds()
         }
 
         dragged.listen {
@@ -277,64 +271,73 @@ class MapperElement(initialContour: ShapeContour): UIElementImpl() {
                 } else {
                     moveShape(it.position)
                 }
+
             }
+
+            calculateBounds()
 
         }
     }
 
+
+    private val ss = shadeStyle {
+        fragmentPreamble = cross2d + inverseBilinear
+
+        fragmentTransform = """
+                      vec2 uv = invBilinear(va_position, p_pos[0], p_pos[1], p_pos[2], p_pos[3]);
+                      
+                      if( uv.x > -0.5 ) x_fill.xyz = texture(p_img, uv).xyz; 
+
+                      x_fill = texture(p_img, uv.xy);
+                      x_fill.a = p_o;
+                      x_fill.a *= (smoothstep(0.0, p_feather, uv.x)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.x));
+                      x_fill.a *= (smoothstep(0.0, p_feather, uv.y)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.y));
+                    """.trimIndent()
+        parameter("o", 1.0)
+    }
+
     fun draw(drawer: Drawer) {
-
         drawer.fill = ColorRGBa.WHITE
-        drawer.stroke = ColorRGBa.PINK
-        drawer.contour(contour)
 
-        image?.let {
+        texture?.let {
             drawer.isolated {
 
+                drawer.stroke = null
                 drawer.fill = ColorRGBa.WHITE
-                drawer.shadeStyle = shadeStyle {
-                    fragmentTransform = """
-                        vec2 texCoord = c_boundsPosition.xy;
-                        vec2 size = textureSize(p_img, 0);
-                        
-                        float boundsAR = c_boundsSize.x / c_boundsSize.y;
-                        float texAR = size.x / size.y;
-                        
-                        texCoord.y = 1.0 - texCoord.y;
-                        
-                        if (texAR > boundsAR) {
-                            float cropFactor = boundsAR / texAR;
-                            texCoord.x = (texCoord.x - 0.5) * cropFactor + 0.5;
-                        } else {
-                            float cropFactor = texAR / boundsAR;
-                            texCoord.y = (texCoord.y - 0.5) * cropFactor + 0.5;
-                        }
-                        
-                        x_fill = texture(p_img, texCoord);
-                        
-                    """.trimIndent()
-                    parameter("img", it)
-                }
 
-                drawer.shape(contour.shape)
+                var o = 0.1
+                ss.parameter("img", it)
+                ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
+                ss.parameter("o", o)
+                ss.parameter("feather", feather)
+
+                drawer.shadeStyle = ss
+                drawer.shape(textureQuad.contour.shape)
+
+                drawer.shadeStyle = null
+                o = 1.0
+
+                ss.parameter("o", o)
+                drawer.shadeStyle = ss
+                drawer.fill = ColorRGBa.WHITE.opacify(1.0)
+                drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))
 
             }
         }
 
-        if (mapperMode == MapperMode.ADJUST || mapperMode == MapperMode.DEBUG) {
+        if (mapperMode == MapperMode.ADJUST) {
+
+            val c = if (tabPressed) mask else textureQuad
+
             drawer.fill = ColorRGBa.PURPLE.mix(ColorRGBa.PINK, 0.5)
-            drawer.circles(contour.points(), 6.0)
+            drawer.circles(c.cPoints, 6.0)
 
             if (activePointIdx != -1) {
                 drawer.fill = ColorRGBa.ORANGE
-                drawer.circle(contour.points()[activePointIdx], 9.0)
+                drawer.circle(c.cPoints[activePointIdx], 9.0)
             }
 
-            for ((i, segment) in contour.segments.withIndex()) {
-                drawer.strokeWeight = 1.0
-                drawer.stroke = ColorRGBa.GREEN.toHSLa().shiftHue(Double.uniform(0.0, 360.0, Random(i))).toRGBa()
-                drawer.segment(segment)
-
+            for (segment in c.cSegments) {
                 drawer.fill = ColorRGBa.WHITE.opacify(0.4)
                 drawer.stroke = null
                 drawer.circles(segment.control.toList(), 4.0)
@@ -348,18 +351,17 @@ class MapperElement(initialContour: ShapeContour): UIElementImpl() {
 
         }
 
-        if (mapperMode == MapperMode.DEBUG) {
+        drawer.fill = null
+        drawer.strokeWeight = 2.5
+        drawer.stroke = ColorRGBa.FUCHSIA
+        drawer.contour(mask.contour)
 
-            drawer.fill = null
-            drawer.stroke = ColorRGBa.PINK.shade(0.4)
-            drawer.contour(actionBounds)
+        drawer.stroke = ColorRGBa.YELLOW
+        drawer.contour(textureQuad.contour)
 
-            for (actionablePoint in actionablePoints) {
-                drawer.fill = null
-                drawer.stroke = ColorRGBa.WHITE
-                drawer.circle(actionablePoint, proximityThreshold)
-            }
-        }
+        drawer.fill = null
+        drawer.stroke = ColorRGBa.RED
+        drawer.contours(actionBounds)
     }
 
 
