@@ -19,13 +19,16 @@ import kotlin.math.log
 
 private val logger = KotlinLogging.logger { }
 
-class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() -> Unit): Extension {
+class Mapper: Extension {
     override var enabled: Boolean = true
 
     lateinit var uiManager: UIManager
     var elements = linkedMapOf<String, MapperElement>()
 
     val defaultPath = "mapper-parameters"
+    var mode = MapperMode.ADJUST
+
+    var builder: Mapper.() -> Unit = {}
 
     // Segment class has lazy length property, which is not supported by Gson decoding
     data class SegmentRef(val start: Vector2, val control: Array<Vector2>, val end:Vector2)
@@ -80,6 +83,10 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
         uiManager.elements.add(m)
     }
 
+    fun pMap(function: Mapper.() -> Unit) {
+        builder = function
+    }
+
     override fun setup(program: Program) {
         uiManager = UIManager(program)
         uiManager.elements.clear()
@@ -93,6 +100,7 @@ class Mapper(val mode: MapperMode = MapperMode.ADJUST, val builder: Mapper.() ->
             toFile(mapperState)
         }
 
+        elements.onEach { it.value.mapperMode = mode }
 
         program.mouse.buttonUp.listen {
             if (mapperState.exists()) {

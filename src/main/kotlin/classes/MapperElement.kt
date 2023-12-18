@@ -9,9 +9,11 @@ import org.openrndr.extra.color.presets.FUCHSIA
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.shapes.adjust.adjustContour
+import org.openrndr.math.Polar
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
+import kotlin.math.atan2
 
 class MapperContour(initialContour: ShapeContour) {
     var contour = initialContour
@@ -38,9 +40,13 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
             field = value
             calculateBounds()
         }
-    var textureQuad = MapperContour(initialMask)
+    var textureQuad = MapperContour(initialMask.bounds.contour)
         set(value) {
-            field = value
+            field = value.apply {
+                // remove control points to keep a quad-like configuration
+                val pts = contour.points().take(4).sortedClockwise()
+                contour = ShapeContour.fromPoints(pts, true)
+            }
             calculateBounds()
         }
 
@@ -52,7 +58,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
             field = value.coerceIn(0.0, 1.0)
         }
 
-    private val proximityThreshold = 9.0
+    private val proximityThreshold = 5.0
 
     private fun movePoint(mouseP: Vector2) {
         activeContour.run {
@@ -126,6 +132,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
     private fun moveShape(mouseP: Vector2) {
         activeContour.run {
+
             if (mouseP in contour.offset(proximityThreshold * 2)) {
                 val b = contour.bounds
                 contour = contour.transform(transform {
@@ -149,6 +156,8 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
                     contour = adjustContour(contour) {
                         selectEdge(idx)
                         edge.splitAt(nearest.segmentT)
+                        edge.toCubic()
+                        edge.next?.toCubic()
                     }
                 }
             }
@@ -186,7 +195,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
     private fun calculateBounds() {
         actionBounds = listOf(
-            mask.contour.offset(proximityThreshold * 2),
+            mask.contour,//.offset(proximityThreshold * 2),
             textureQuad.contour.offset(proximityThreshold * 2)
         )
     }
@@ -303,18 +312,23 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
         texture?.let {
             drawer.isolated {
-
-                drawer.stroke = null
-                drawer.fill = ColorRGBa.WHITE.opacify(opacity)
-
-                var o = 0.1 * opacity
                 ss.parameter("img", it)
                 ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
-                ss.parameter("o", o)
                 ss.parameter("feather", feather)
 
-                drawer.shadeStyle = ss
-                drawer.shape(textureQuad.contour.shape)
+                var o: Double
+
+                if (mapperMode == MapperMode.ADJUST) {
+                    o = 0.1 * opacity
+                    drawer.stroke = null
+                    drawer.fill = ColorRGBa.WHITE.opacify(opacity)
+
+                    ss.parameter("o", o)
+
+                    drawer.shadeStyle = ss
+                    drawer.shape(textureQuad.contour.shape)
+                }
+
 
                 drawer.shadeStyle = null
                 o = 1.0 * opacity
@@ -324,6 +338,8 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
                 drawer.fill = ColorRGBa.WHITE.opacify(o)
                 drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))
 
+
+
             }
         }
 
@@ -331,12 +347,12 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
             val c = if (tabPressed) mask else textureQuad
 
-            drawer.fill = ColorRGBa.PURPLE.mix(ColorRGBa.PINK, 0.5).opacify(opacity)
+            drawer.fill = ColorRGBa.PINK.opacify(opacity)
             drawer.circles(c.cPoints, 6.0)
 
             if (activePointIdx != -1) {
-                drawer.fill = ColorRGBa.ORANGE.opacify(opacity)
-                drawer.circle(c.cPoints[activePointIdx], 9.0)
+                drawer.fill = ColorRGBa.FUCHSIA.opacify(opacity)
+                c.cPoints.getOrNull(activePointIdx)?.let { drawer.circle(it, 9.0) }
             }
 
             for (segment in c.cSegments) {
@@ -351,36 +367,40 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
             }
 
-        }
-
-        drawer.fill = null
-        drawer.strokeWeight = 2.5
-        drawer.stroke = ColorRGBa.FUCHSIA.opacify(opacity)
-        drawer.contour(mask.contour)
-
-        drawer.stroke = ColorRGBa.YELLOW.opacify(opacity)
-        drawer.contour(textureQuad.contour)
-
-        if (isActive) {
-            drawer.strokeWeight = 1.0
-            drawer.stroke = ColorRGBa.WHITE
             drawer.fill = null
-            drawer.shadeStyle = shadeStyle {
-                fragmentTransform = """
+            drawer.strokeWeight = 2.5
+            drawer.stroke = ColorRGBa.PINK.opacify(opacity)
+            drawer.contour(mask.contour)
+
+            drawer.stroke = ColorRGBa.GREEN.opacify(opacity)
+            drawer.contour(textureQuad.contour)
+
+            if (isActive) {
+                drawer.strokeWeight = 1.0
+                drawer.stroke = ColorRGBa.WHITE
+                drawer.fill = null
+                drawer.shadeStyle = shadeStyle {
+                    fragmentTransform = """
                      float m = sin(c_contourPosition * 0.85 - p_t * 5.0) * 0.5 + 0.5;
                      x_stroke.rgba *= mix(vec4(1.0), vec4(0.0), m);
                 """.trimIndent()
-                parameter("t", (System.currentTimeMillis() - initialT) / 1000.0)
+                    parameter("t", (System.currentTimeMillis() - initialT) / 1000.0)
+                }
+                drawer.contours(actionBounds)
+                drawer.shadeStyle = null
             }
-            drawer.contours(actionBounds)
-            drawer.shadeStyle = null
+
         }
+
+
+
     }
 
 
     private fun isInRange(pos: Vector2, mousePos: Vector2): Boolean {
         return pos.distanceTo(mousePos) < proximityThreshold
     }
+
 
 }
 
