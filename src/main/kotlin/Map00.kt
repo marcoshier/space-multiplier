@@ -2,6 +2,7 @@ import classes.Mapper
 import classes.MapperMode
 import org.openrndr.*
 import org.openrndr.color.ColorHSLa
+import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.extra.imageFit.imageFit
 import org.openrndr.extra.olive.OliveScriptHost
@@ -9,6 +10,7 @@ import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.extra.shapes.hobbyCurve
 import org.openrndr.extra.shapes.regularPolygon
 import org.openrndr.math.Vector2
+import org.openrndr.shape.Circle
 
 /**
  *  * Projection Mapper v0.1 mini-guide
@@ -45,24 +47,21 @@ fun main() = application {
 
     oliveProgram(scriptHost = OliveScriptHost.JSR223) {
 
-        val rt = renderTarget(width, height) { colorBuffer() }
-
         val img = loadImage("data/images/pm5544.png")
 
         extend(Mapper()) {
             mode = MapperMode.ADJUST
 
             pMap {
-                mapperElement("cheeta", regularPolygon(3, Vector2(840.0, 360.0), 180.0).hobbyCurve(), feather = 0.1) { rt.colorBuffer(0) }
+                mapperElement("cheeta", Circle(100.0, 100.0, 100.0).contour, feather = 0.1) {
+                    drawer.clear(ColorRGBa.RED)
+                    drawer.rotate(seconds)
+                    drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
+                    drawer.imageFit(img, drawer.bounds)
+                }
             }
         }
         extend {
-
-            drawer.isolatedWithTarget(rt) {
-                drawer.rotate(seconds)
-                drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
-                drawer.imageFit(img, drawer.bounds)
-            }
 
         }
     }

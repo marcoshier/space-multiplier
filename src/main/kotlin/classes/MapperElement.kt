@@ -14,6 +14,7 @@ import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
 import kotlin.math.atan2
+import org.openrndr.extra.viewbox.ViewBox
 
 class MapperContour(initialContour: ShapeContour) {
     var contour = initialContour
@@ -51,6 +52,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
         }
 
     var texture: ColorBuffer? = null
+    var vb: ViewBox? = null
     var mapperMode: MapperMode = MapperMode.ADJUST
 
     var feather = feather
@@ -309,6 +311,10 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
         val opacity = if (isActive) 1.0 else 0.5
 
+        vb?.let {
+            it.update()
+            texture = it.result
+        }
 
         texture?.let {
             drawer.isolated {

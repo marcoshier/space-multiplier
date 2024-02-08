@@ -11,6 +11,8 @@ import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.ColorBuffer
 import org.openrndr.draw.Drawer
 import org.openrndr.draw.isolated
+import org.openrndr.extra.viewbox.ViewBox
+import org.openrndr.extra.viewbox.viewBox
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
@@ -76,10 +78,13 @@ class Mapper: Extension {
         logger.info { "saved to file ${file.name}" }
     }
 
-    fun mapperElement(id: String, contour: ShapeContour, feather: Double = 0.0, f: () -> ColorBuffer) {
-        val cb = f()
+    lateinit var p: Program
 
-        val m = elements.getOrPut(id) { MapperElement(contour, feather).apply { texture = cb } }
+    fun mapperElement(id: String, contour: ShapeContour, feather: Double = 0.0, f: ViewBox.() -> Unit) {
+        val viewbox = p.viewBox(contour.bounds).apply { extend { f() } }
+
+
+        val m = elements.getOrPut(id) { MapperElement(contour, feather).apply { vb = viewbox } }
         uiManager.elements.add(m)
     }
 
@@ -88,6 +93,8 @@ class Mapper: Extension {
     }
 
     override fun setup(program: Program) {
+        p = program
+
         uiManager = UIManager(program)
         uiManager.elements.clear()
 
