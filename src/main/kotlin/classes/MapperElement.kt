@@ -34,7 +34,11 @@ class MapperContour(initialContour: ShapeContour) {
 }
 
 
-class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElementImpl() {
+class MapperElement(
+    initialMask: ShapeContour,
+    feather: Double = 0.0,
+    var mapperMode: MapperMode = MapperMode.ADJUST
+): UIElementImpl() {
 
     var mask = MapperContour(initialMask)
         set(value) {
@@ -53,7 +57,6 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
     var texture: ColorBuffer? = null
     var vb: ViewBox? = null
-    var mapperMode: MapperMode = MapperMode.ADJUST
 
     var feather = feather
         set(value) {
@@ -309,7 +312,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
 
     fun draw(drawer: Drawer, isActive: Boolean = true) {
 
-        val opacity = if (isActive) 1.0 else 0.5
+        val opacity = if (isActive || mapperMode == MapperMode.PRODUCTION) 1.0 else 0.5
 
         vb?.let {
             it.update()
@@ -340,6 +343,7 @@ class MapperElement(initialMask: ShapeContour, feather: Double = 0.0): UIElement
                 o = 1.0 * opacity
 
                 ss.parameter("o", o)
+                drawer.stroke = ColorRGBa.TRANSPARENT
                 drawer.shadeStyle = ss
                 drawer.fill = ColorRGBa.WHITE.opacify(o)
                 drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))

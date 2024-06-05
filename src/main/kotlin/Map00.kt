@@ -11,6 +11,7 @@ import org.openrndr.extra.shapes.hobbyCurve
 import org.openrndr.extra.shapes.regularPolygon
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Circle
+import org.openrndr.shape.Rectangle
 
 /**
  *  * Projection Mapper v0.1 mini-guide
@@ -53,12 +54,19 @@ fun main() = application {
             mode = MapperMode.ADJUST
 
             pMap {
-                mapperElement("cheeta", Circle(100.0, 100.0, 100.0).contour, feather = 0.1) {
+                mapperElement("cheeta2", Rectangle.fromCenter(Vector2(100.0, 100.0), 500.0).contour, feather = 0.1) {
                     drawer.clear(ColorRGBa.RED)
                     drawer.rotate(seconds)
                     drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
                     drawer.imageFit(img, drawer.bounds)
                 }
+                mapperElement("cheeta", Circle(250.0, 250.0, 100.0).contour, feather = 0.1) {
+                    drawer.clear(ColorRGBa.RED)
+                    drawer.rotate(seconds)
+                    drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
+                    drawer.imageFit(img, drawer.bounds)
+                }
+
             }
         }
         extend {

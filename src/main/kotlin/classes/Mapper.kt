@@ -14,6 +14,7 @@ import org.openrndr.draw.isolated
 import org.openrndr.extra.viewbox.ViewBox
 import org.openrndr.extra.viewbox.viewBox
 import org.openrndr.math.Vector2
+import org.openrndr.math.mod
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
 import java.io.File
@@ -84,7 +85,7 @@ class Mapper: Extension {
         val viewbox = p.viewBox(contour.bounds).apply { extend { f() } }
 
 
-        val m = elements.getOrPut(id) { MapperElement(contour, feather).apply { vb = viewbox } }
+        val m = elements.getOrPut(id) { MapperElement(contour, feather, mode).apply { vb = viewbox } }
         uiManager.elements.add(m)
     }
 
@@ -93,6 +94,10 @@ class Mapper: Extension {
     }
 
     override fun setup(program: Program) {
+        if (!File(defaultPath).exists()) {
+            File(defaultPath).mkdir()
+        }
+
         p = program
 
         uiManager = UIManager(program)
