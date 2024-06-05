@@ -109,7 +109,7 @@ dependencies {
 //    implementation(libs.jsoup)
       implementation(libs.gson)
 //    implementation(libs.csv)
-
+    implementation("io.obs-websocket.community:client:2.0.0")
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.slf4j.api)
     implementation(libs.kotlin.logging)
