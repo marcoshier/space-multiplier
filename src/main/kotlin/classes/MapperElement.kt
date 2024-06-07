@@ -7,14 +7,10 @@ import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.events.Event
 import org.openrndr.extra.color.presets.FUCHSIA
-import org.openrndr.extra.color.presets.ORANGE
-import org.openrndr.extra.color.presets.PURPLE
 import org.openrndr.extra.shapes.adjust.adjustContour
-import org.openrndr.math.Polar
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
-import kotlin.math.atan2
 import org.openrndr.extra.viewbox.ViewBox
 
 class MapperContour(initialContour: ShapeContour) {

@@ -1,8 +1,6 @@
 package lab
 
 import org.openrndr.*
-import org.openrndr.color.ColorRGBa
-import org.openrndr.events.listen
 import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.shape.Rectangle
 

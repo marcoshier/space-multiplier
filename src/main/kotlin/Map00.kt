@@ -4,12 +4,7 @@ import org.openrndr.*
 import org.openrndr.color.ColorHSLa
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
-import org.openrndr.events.Event
 import org.openrndr.extra.imageFit.imageFit
-import org.openrndr.extra.olive.OliveScriptHost
-import org.openrndr.extra.olive.oliveProgram
-import org.openrndr.extra.shapes.hobbyCurve
-import org.openrndr.extra.shapes.regularPolygon
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Circle
 import org.openrndr.shape.Rectangle
@@ -36,6 +31,7 @@ import org.openrndr.shape.Rectangle
  *      - Drag inside shape: Move shape
  *      - Drag segment: Move segment
  *      - Hold shift while moving control point to move the opposite one in a specular fashion
+ *      - CTRL-Z to undo
  *
  */
 
@@ -72,21 +68,6 @@ fun main() = application {
             }
         }
         extend {
-
-            var list = mutableListOf<String>()
-            m.history.forEach {(name, ic) ->
-                list.add("$name - ${ic.first} - ${if (ic.first == 0) "mask" else "texQuad"}: ${ic.second.hashCode()}")
-            }
-
-            drawer.isolated {
-                drawer.defaults()
-                list.forEach {
-                    drawer.translate(0.0, 20.0)
-                    drawer.text(it, 30.0, 50.0)
-                }
-            }
-
-
 
         }
     }

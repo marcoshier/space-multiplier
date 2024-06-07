@@ -57,6 +57,8 @@ fun main() = application {
         fun startVirtualCamera() {
             controller.startVirtualCam(timeout)
         }
+
+
     }
 
     program {

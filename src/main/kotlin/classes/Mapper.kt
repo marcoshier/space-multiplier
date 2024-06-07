@@ -6,18 +6,13 @@ import com.google.gson.reflect.TypeToken
 import lib.UIManager
 import mu.KotlinLogging
 import org.openrndr.*
-import org.openrndr.color.ColorRGBa
-import org.openrndr.draw.ColorBuffer
 import org.openrndr.draw.Drawer
-import org.openrndr.draw.isolated
 import org.openrndr.extra.viewbox.ViewBox
 import org.openrndr.extra.viewbox.viewBox
 import org.openrndr.math.Vector2
-import org.openrndr.math.mod
 import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
 import java.io.File
-import kotlin.math.log
 
 private val logger = KotlinLogging.logger { }
 
