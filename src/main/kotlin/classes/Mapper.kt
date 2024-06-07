@@ -1,5 +1,6 @@
 package classes
 
+import RabbitControlServer
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -7,6 +8,8 @@ import lib.UIManager
 import mu.KotlinLogging
 import org.openrndr.*
 import org.openrndr.draw.Drawer
+import org.openrndr.extra.parameters.BooleanParameter
+import org.openrndr.extra.parameters.OptionParameter
 import org.openrndr.extra.viewbox.ViewBox
 import org.openrndr.extra.viewbox.viewBox
 import org.openrndr.math.Vector2
@@ -14,17 +17,24 @@ import org.openrndr.shape.Segment
 import org.openrndr.shape.ShapeContour
 import java.io.File
 
+class MapperSettings {
+    @OptionParameter("mode", 0)
+    var mode = MapperMode.ADJUST
+}
+
+
 private val logger = KotlinLogging.logger { }
 
-class Mapper: Extension {
+class Mapper(val control: RabbitControlServer? = null): Extension {
     override var enabled: Boolean = true
 
+    val settings  = MapperSettings()
 
     lateinit var uiManager: UIManager
     var elements = linkedMapOf<String, MapperElement>()
 
     val defaultPath = "mapper-parameters"
-    var mode = MapperMode.ADJUST
+
 
     var builder: Mapper.() -> Unit = {}
 
@@ -133,7 +143,7 @@ class Mapper: Extension {
         val viewbox = p.viewBox(contour.bounds).apply { extend { f() } }
 
         println("spawning mapper element")
-        val m = elements.getOrPut(id) { MapperElement(id, contour, feather, mode).apply { vb = viewbox } }
+        val m = elements.getOrPut(id) { MapperElement(id, contour, feather, settings.mode).apply { vb = viewbox } }
 
         initialStates.add(m.name to (0 to m.mask.contour))
         initialStates.add(m.name to (1 to m.textureQuad.contour))
@@ -169,7 +179,7 @@ class Mapper: Extension {
             toFile(mapperState)
         }
 
-        elements.onEach { it.value.mapperMode = mode }
+        elements.onEach { it.value.mapperMode = settings.mode }
 
         initialStates.forEach {
             println(it)
@@ -187,6 +197,9 @@ class Mapper: Extension {
                     undo()
                 }
             }
+        }
+
+        if (control != null) {
         }
     }
 
