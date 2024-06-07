@@ -5,8 +5,7 @@ import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import lib.UIManager
 import mu.KotlinLogging
-import org.openrndr.Extension
-import org.openrndr.Program
+import org.openrndr.*
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.ColorBuffer
 import org.openrndr.draw.Drawer
@@ -24,6 +23,7 @@ private val logger = KotlinLogging.logger { }
 
 class Mapper: Extension {
     override var enabled: Boolean = true
+
 
     lateinit var uiManager: UIManager
     var elements = linkedMapOf<String, MapperElement>()
@@ -51,6 +51,13 @@ class Mapper: Extension {
                 it.textureQuad = MapperContour(ShapeContour.fromSegments(l[1].map { v -> refToSegment(v) }, true))
             }
         }
+
+        initialStates.clear()
+        for (m in elements.values) {
+            initialStates.add(m.name to (0 to m.mask.contour))
+            initialStates.add(m.name to (1 to m.textureQuad.contour))
+        }
+
     }
 
     fun fromFile(file:File) {
@@ -79,19 +86,74 @@ class Mapper: Extension {
         logger.info { "saved to file ${file.name}" }
     }
 
+
+    val initialStates = mutableListOf<Pair<String, Pair<Int, ShapeContour>>>()
+    val history = mutableListOf<Pair<String, Pair<Int, ShapeContour>>>()
+
+    private fun undo() {
+        if (history.isNotEmpty()) {
+            val last = history.getOrNull(history.lastIndex - 1)
+            last?.let { (name, ic) ->
+                println("$name - $ic")
+                val (index, contour) = ic
+                if (index == 0) {
+                    println("changing mask")
+                    elements[name]?.mask?.contour = contour
+                } else {
+                    elements[name]?.textureQuad?.contour = contour
+                }
+                elements[name]?.calculateBounds()
+
+                history.removeLast()
+            }
+        }
+
+    }
+
+    fun addListener(e: MapperElement) {
+        if (e.contourChangedEvent.listeners.isEmpty()) {
+            e.contourChangedEvent.listeners.add {
+                if (initialStates.map { it.first }.contains(e.name)) {
+                    println("finding initial state of name ${e.name} and idx $it")
+                    val els = initialStates.filter { it.first == e.name }
+                    val el  = els.firstOrNull { e -> e.second.first == it }
+                    if (el != null) {
+                        println("found, adding to history")
+                        history.add(el)
+                        initialStates.remove(el)
+                    } else {
+                        println("not found $it - ${el?.second?.first}")
+                    }
+                }
+                val c = if (it == 0) e.mask else e.textureQuad
+                history.add(e.name to (it to c.contour))
+            }
+        }
+    }
+
+
     lateinit var p: Program
 
     fun mapperElement(id: String, contour: ShapeContour, feather: Double = 0.0, f: ViewBox.() -> Unit) {
         val viewbox = p.viewBox(contour.bounds).apply { extend { f() } }
 
+        println("spawning mapper element")
+        val m = elements.getOrPut(id) { MapperElement(id, contour, feather, mode).apply { vb = viewbox } }
 
-        val m = elements.getOrPut(id) { MapperElement(contour, feather, mode).apply { vb = viewbox } }
+        initialStates.add(m.name to (0 to m.mask.contour))
+        initialStates.add(m.name to (1 to m.textureQuad.contour))
+
         uiManager.elements.add(m)
+        addListener(m)
     }
 
     fun pMap(function: Mapper.() -> Unit) {
         builder = function
     }
+
+
+
+    private var ctrlPressed = false
 
     override fun setup(program: Program) {
         if (!File(defaultPath).exists()) {
@@ -114,9 +176,21 @@ class Mapper: Extension {
 
         elements.onEach { it.value.mapperMode = mode }
 
+        initialStates.forEach {
+            println(it)
+        }
+
         program.mouse.buttonUp.listen {
             if (mapperState.exists()) {
                 toFile(File(defaultPath, "${program.name}-latest.json"))
+            }
+        }
+
+        program.run {
+            keyboard.keyUp.listen {
+                if (it.name == "z" && it.modifiers.contains(KeyModifier.CTRL)) {
+                    undo()
+                }
             }
         }
     }

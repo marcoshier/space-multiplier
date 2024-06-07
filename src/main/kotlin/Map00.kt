@@ -4,6 +4,7 @@ import org.openrndr.*
 import org.openrndr.color.ColorHSLa
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
+import org.openrndr.events.Event
 import org.openrndr.extra.imageFit.imageFit
 import org.openrndr.extra.olive.OliveScriptHost
 import org.openrndr.extra.olive.oliveProgram
@@ -46,21 +47,22 @@ fun main() = application {
         height = 720
     }
 
-    oliveProgram(scriptHost = OliveScriptHost.JSR223) {
+    program {
+
 
         val img = loadImage("data/images/pm5544.png")
 
-        extend(Mapper()) {
+        val m = extend(Mapper()) {
             mode = MapperMode.ADJUST
 
             pMap {
-                mapperElement("cheeta2", Rectangle.fromCenter(Vector2(100.0, 100.0), 500.0).contour, feather = 0.1) {
+                mapperElement("big", Rectangle.fromCenter(Vector2(100.0, 100.0), 500.0).contour, feather = 0.1) {
                     drawer.clear(ColorRGBa.RED)
                     drawer.rotate(seconds)
                     drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
                     drawer.imageFit(img, drawer.bounds)
                 }
-                mapperElement("cheeta", Circle(250.0, 250.0, 100.0).contour, feather = 0.1) {
+                mapperElement("small", Circle(250.0, 250.0, 100.0).contour, feather = 0.1) {
                     drawer.clear(ColorRGBa.RED)
                     drawer.rotate(seconds)
                     drawer.drawStyle.colorMatrix = tint(ColorHSLa(0.5, 0.5, 0.5).shiftHue(seconds * 360.0).toRGBa())
@@ -70,6 +72,21 @@ fun main() = application {
             }
         }
         extend {
+
+            var list = mutableListOf<String>()
+            m.history.forEach {(name, ic) ->
+                list.add("$name - ${ic.first} - ${if (ic.first == 0) "mask" else "texQuad"}: ${ic.second.hashCode()}")
+            }
+
+            drawer.isolated {
+                drawer.defaults()
+                list.forEach {
+                    drawer.translate(0.0, 20.0)
+                    drawer.text(it, 30.0, 50.0)
+                }
+            }
+
+
 
         }
     }

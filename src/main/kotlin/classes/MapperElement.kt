@@ -5,6 +5,7 @@ import org.openrndr.MouseButton
 import org.openrndr.MouseEventType
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
+import org.openrndr.events.Event
 import org.openrndr.extra.color.presets.FUCHSIA
 import org.openrndr.extra.color.presets.ORANGE
 import org.openrndr.extra.color.presets.PURPLE
@@ -31,14 +32,18 @@ class MapperContour(initialContour: ShapeContour) {
     var cPoints = contour.points()
     var cControls = contour.segments.map { it.control.toList() }.flatten()
     var actionablePoints = (cPoints + cControls)
+
 }
 
 
 class MapperElement(
+    val name: String,
     initialMask: ShapeContour,
     feather: Double = 0.0,
     var mapperMode: MapperMode = MapperMode.ADJUST
 ): UIElementImpl() {
+
+    val contourChangedEvent = Event<Int>("contour-changed")
 
     var mask = MapperContour(initialMask)
         set(value) {
@@ -156,8 +161,6 @@ class MapperElement(
                     val segmentRef = nearest.segment
                     val idx = cSegments.indexOf(segmentRef)
 
-                    println(idx)
-
                     contour = adjustContour(contour) {
                         selectEdge(idx)
                         edge.splitAt(nearest.segmentT)
@@ -198,7 +201,7 @@ class MapperElement(
     private var lastMouseEvent = MouseEventType.BUTTON_UP
 
 
-    private fun calculateBounds() {
+    fun calculateBounds() {
         actionBounds = listOf(
             mask.contour,//.offset(proximityThreshold * 2),
             textureQuad.contour.offset(proximityThreshold * 2)
@@ -259,6 +262,8 @@ class MapperElement(
 
             }
 
+            contourChangedEvent.trigger(if (activeContour == mask) 0 else 1)
+
             activeContour = mask
             activePointIdx = -1
             activeControlPointIdx = -1
@@ -267,6 +272,7 @@ class MapperElement(
             lastMouseEvent = it.type
 
             calculateBounds()
+
         }
 
         dragged.listen {

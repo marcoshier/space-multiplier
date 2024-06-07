@@ -1,10 +1,10 @@
 package lab
 
-import org.openrndr.KEY_LEFT_SHIFT
-import org.openrndr.KEY_RIGHT_SHIFT
-import org.openrndr.application
+import org.openrndr.*
+import org.openrndr.color.ColorRGBa
+import org.openrndr.events.listen
 import org.openrndr.extra.olive.oliveProgram
-import org.openrndr.launch
+import org.openrndr.shape.Rectangle
 
 fun main() = application {
 
@@ -15,30 +15,21 @@ fun main() = application {
 
     oliveProgram {
 
-        var shiftPressed = false
+        val r0 = Rectangle(0.0, 0.0, 100.0, 100.0).contour
+        val r1 = Rectangle(1.0, 0.0, 100.0, 100.0).contour
 
-        launch {
-            keyboard.keyRepeat.listen {
-                if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
-                    shiftPressed = true
-                }
-            }
-            keyboard.keyUp.listen {
-                if(it.key == KEY_LEFT_SHIFT || it.key == KEY_RIGHT_SHIFT) {
-                    shiftPressed = false
-                }
-            }
-        }
-
-        var currentChar = " "
+        println(r0.hashCode() == r1.hashCode())
 
         keyboard.keyUp.listen {
-            currentChar = it.name
+            if (it.name == "z" && it.modifiers.contains(KeyModifier.CTRL)) {
+                println("down")
+            }
         }
+
 
         extend {
 
-            println("${ if (shiftPressed) "SHIFT " else "" } + $currentChar")
+
 
         }
     }
