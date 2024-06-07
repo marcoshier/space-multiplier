@@ -137,11 +137,15 @@ class MapperElement(
     }
 
     private fun moveShape(mouseP: Vector2) {
-        activeContour.run {
+        var movableContours = listOf<MapperContour>()
+        movableContours = if (tabPressed) listOf(mask)
+        else if (shiftPressed) listOf(textureQuad)
+        else listOf(mask, textureQuad)
 
-            if (mouseP in contour.offset(proximityThreshold * 2)) {
-                val b = contour.bounds
-                contour = contour.transform(transform {
+        for (c in movableContours) {
+            if (mouseP in c.contour.offset(proximityThreshold * 2)) {
+                val b = c.contour.bounds
+                c.contour = c.contour.transform(transform {
                     translate(mouseP - b.position(activeAnchor))
                 })
             }
