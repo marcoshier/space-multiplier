@@ -73,7 +73,7 @@ fun main() = application {
         obs.stopSource()
         obs.playSource("MAIN")
 
-        launch {
+        GlobalScope.launch {
             embeddedServer(Netty, port = 9999) {
                 install(WebSockets)
                 routing {
@@ -86,6 +86,7 @@ fun main() = application {
                             val t = listOf(obs.getNormalizedCursor(), obs.getSourceCursor() / 1000.0, obs.getSourceDuration() / 1000.0)
 
                             send(Frame.Text(t.joinToString(" ")))
+                            window.requestDraw()
                             delay(10)
                         }
                     }
