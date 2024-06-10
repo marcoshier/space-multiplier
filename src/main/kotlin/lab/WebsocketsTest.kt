@@ -25,9 +25,9 @@ fun main() = application {
                 routing {
                     webSocket("/ws") {
                         while (true) {
-                            val t = obs.getNormalizedCursor()
+                            val t = listOf(obs.getNormalizedCursor(), obs.getSourceCursor() / 1000.0, obs.getSourceDuration() / 1000.0)
 
-                            send(Frame.Text((t.toString())))
+                            send(Frame.Text(t.joinToString(" ")))
                             delay(10)
                         }
                     }

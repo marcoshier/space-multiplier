@@ -1,6 +1,38 @@
 <html>
 <head>
-    <title>Using Ktor WebSockets</title>
+    <title>WS-Server</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            top: 0;
+            left: 0;
+            background: black;
+        }
+
+        #counter {
+            color: white;
+        }
+
+        #loading-container {
+            position: absolute;
+            top: 1vh;
+            left: 1vw;
+            height: 98vh;
+            width: 98vw;
+            border: white;
+            background: transparent;
+        }
+
+        #loading-bar {
+            position: absolute;
+            top: 1vh;
+            left: 1vw;
+            height: 98vh;
+            width: 0;
+            background: white;
+        }
+    </style>
     <script>
         function readAndDisplayAllTasks() {
             const serverURL = 'ws://127.0.0.1:9999/ws';
@@ -12,12 +44,16 @@
         }
 
         function readAndDisplayTask(event) {
-            let task = JSON.parse(event.data);
-            logTaskToConsole(task);
+            let values = event.data.split(" ")
+            logTaskToConsole(values);
         }
 
-        function logTaskToConsole(task) {
-            document.getElementById("counter").innerText = task;
+        function logTaskToConsole(values) {
+            let nt = values[0]
+            let c = values[1]
+            let d = values[2]
+            document.getElementById("loading-bar").style.width = nt * 99 + "vw";
+           // document.getElementById("counter").innerText = "normalized: " + nt + "cursor: " + c + "duration: " + d;
         }
 
         function logCloseToConsole() {
@@ -32,6 +68,8 @@
     </script>
 </head>
 <body>
-<p id="counter">hello</p>
+<div id="loading-container"></div>
+<div id="loading-bar"></div>
+<p id="counter">disconnected</p>
 </body>
 </html>
