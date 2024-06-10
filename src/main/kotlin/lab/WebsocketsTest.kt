@@ -28,7 +28,9 @@ fun main() = application {
             embeddedServer(Netty, port = 9999) {
                 install(WebSockets)
                 routing {
-                    staticFiles("/static", File("static"))
+                    staticFiles("/static", File("static")) {
+
+                    }
 
                     webSocket("/ws") {
                         while (true) {

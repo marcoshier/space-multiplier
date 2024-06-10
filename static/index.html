@@ -35,7 +35,7 @@
     </style>
     <script>
         function readAndDisplayAllTasks() {
-            const serverURL = 'ws://127.0.0.1:9999/ws';
+            const serverURL = 'ws://172.20.10.2:9999/ws';
             const socket = new WebSocket(serverURL);
 
             socket.onopen = logOpenToConsole;
