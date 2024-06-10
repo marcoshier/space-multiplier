@@ -1,0 +1,37 @@
+<html>
+<head>
+    <title>Using Ktor WebSockets</title>
+    <script>
+        function readAndDisplayAllTasks() {
+            const serverURL = 'ws://127.0.0.1:9999/ws';
+            const socket = new WebSocket(serverURL);
+
+            socket.onopen = logOpenToConsole;
+            socket.onclose = logCloseToConsole;
+            socket.onmessage = readAndDisplayTask;
+        }
+
+        function readAndDisplayTask(event) {
+            let task = JSON.parse(event.data);
+            logTaskToConsole(task);
+        }
+
+        function logTaskToConsole(task) {
+            document.getElementById("counter").innerText = task;
+        }
+
+        function logCloseToConsole() {
+            console.log("Web socket connection closed");
+        }
+
+        function logOpenToConsole() {
+            console.log("Web socket connection opened");
+        }
+
+        readAndDisplayAllTasks()
+    </script>
+</head>
+<body>
+<p id="counter">hello</p>
+</body>
+</html>
