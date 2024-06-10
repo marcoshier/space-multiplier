@@ -53,20 +53,38 @@ class OBSControl {
         controller!!.connect()
     }
 
+    var currentScene = ""
+    var currentSource = ""
+
     fun setScene(sceneName: String) {
+        currentScene = sceneName
         controller?.setCurrentProgramScene(sceneName, timeout)
     }
 
     fun playSource(sourceName: String) {
         controller?.triggerMediaInputAction(sourceName, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PLAY", timeout)
+        currentSource = sourceName
     }
 
-    fun stopSource(sourceName: String) {
-        controller?.triggerMediaInputAction(sourceName, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP", timeout)
+    fun stopSource() {
+        controller?.triggerMediaInputAction(currentSource, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP", timeout)
+        currentSource = ""
     }
 
-    fun pauseSource(sourceName: String) {
-        controller?.triggerMediaInputAction(sourceName, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE", timeout)
+    fun pauseSource() {
+        controller?.triggerMediaInputAction(currentSource, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE", timeout)
+    }
+
+    fun getSourceCursor(): Double {
+        return controller?.getMediaInputStatus(currentSource, timeout)!!.mediaCursor.toDouble()
+    }
+
+    fun getSourceDuration(): Double {
+        return controller?.getMediaInputStatus(currentSource, timeout)!!.mediaDuration.toDouble()
+    }
+
+    fun getNormalizedCursor(): Double {
+        return (getSourceCursor() / getSourceDuration()).coerceIn(0.0, 1.0)
     }
 
     fun startVirtualCamera() {

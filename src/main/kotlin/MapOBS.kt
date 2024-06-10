@@ -14,7 +14,7 @@ fun main() = application {
         val obs = OBSControl()
         obs.setScene("Film")
         obs.playSource("MAIN")
-        obs.pauseSource("MAIN")
+        obs.pauseSource()
 
         obs.startVirtualCamera()
 

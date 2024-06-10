@@ -12,19 +12,28 @@ import org.openrndr.application
 import org.openrndr.launch
 
 @OptIn(DelicateCoroutinesApi::class)
-fun main() {
-    val obsControl = OBSControl()
+fun main() = application {
 
-    embeddedServer(Netty, port = 9999) {
-        install(WebSockets)
-        routing {
-            val start = System.currentTimeMillis()
-            webSocket("/ws") {
-                while (true) {
-                    send(Frame.Text(((System.currentTimeMillis() - start) / 1000.0).toString()))
-                    delay(10)
+    program {
+
+        val obs = OBSControl()
+        obs.playSource("MAIN")
+
+        GlobalScope.launch {
+            embeddedServer(Netty, port = 9999) {
+                install(WebSockets)
+                routing {
+                    webSocket("/ws") {
+                        while (true) {
+                            val t = obs.getNormalizedCursor()
+
+                            send(Frame.Text((t.toString())))
+                            delay(10)
+                        }
+                    }
                 }
-            }
+            }.start(wait = true)
         }
-    }.start(wait = true)
+
+    }
 }
