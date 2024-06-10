@@ -1,17 +1,20 @@
 package classes
 
 import lib.*
+import offset.offset
 import org.openrndr.MouseButton
 import org.openrndr.MouseEventType
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.events.Event
 import org.openrndr.extra.color.presets.FUCHSIA
+import org.openrndr.extra.shadestyles.imageFit
 import org.openrndr.extra.shapes.adjust.adjustContour
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
 import org.openrndr.extra.viewbox.ViewBox
+import org.openrndr.shape.Segment2D
 
 class MapperContour(initialContour: ShapeContour) {
     var contour = initialContour
@@ -95,11 +98,11 @@ class MapperElement(
                 val saIdx = (segmentIdx + 1).mod(cSegments.size)
 
                 if (activePoint == segment.control[0]) {
-                    cSegments[segmentIdx] = Segment(segment.start, mouseP, segment.control[1], segment.end)
-                    if (shiftPressed) cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control[0], segment.control[0].rotate(180.0, segment.start), cSegments[sbIdx].end)
+                    cSegments[segmentIdx] = Segment2D(segment.start, mouseP, segment.control[1], segment.end)
+                    if (shiftPressed) cSegments[sbIdx] = Segment2D(cSegments[sbIdx].start, cSegments[sbIdx].control[0], segment.control[0].rotate(180.0, segment.start), cSegments[sbIdx].end)
                 } else {
-                    cSegments[segmentIdx] = Segment(segment.start, segment.control[0], mouseP,  segment.end)
-                    if (shiftPressed) cSegments[saIdx] = Segment(cSegments[saIdx].start, segment.control[1].rotate(180.0, segment.end), cSegments[saIdx].control[1], cSegments[saIdx].end)
+                    cSegments[segmentIdx] = Segment2D(segment.start, segment.control[0], mouseP,  segment.end)
+                    if (shiftPressed) cSegments[saIdx] = Segment2D(cSegments[saIdx].start, segment.control[1].rotate(180.0, segment.end), cSegments[saIdx].control[1], cSegments[saIdx].end)
                 }
 
                 contour = contour {
@@ -122,8 +125,8 @@ class MapperElement(
                 val d = mouseP - activeSegment.position(activeSegmentT)
 
                 cSegments[activeSegmentIdx] = cSegments[activeSegmentIdx].transform(transform { translate(d) })
-                cSegments[sbIdx] = Segment(cSegments[sbIdx].start, cSegments[sbIdx].control, cSegments[activeSegmentIdx].start)
-                cSegments[saIdx] = Segment(cSegments[activeSegmentIdx].end, cSegments[saIdx].control, cSegments[saIdx].end)
+                cSegments[sbIdx] = Segment2D(cSegments[sbIdx].start, cSegments[sbIdx].control, cSegments[activeSegmentIdx].start)
+                cSegments[saIdx] = Segment2D(cSegments[activeSegmentIdx].end, cSegments[saIdx].control, cSegments[saIdx].end)
 
                 contour = contour {
                     for (s in cSegments) {

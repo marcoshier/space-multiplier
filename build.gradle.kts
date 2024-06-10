@@ -98,6 +98,7 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.runtime)
     alias(libs.plugins.gitarchive.tomarkdown).apply(false)
+    id("io.ktor.plugin") version "2.3.11"
 }
 
 repositories {
@@ -106,9 +107,15 @@ repositories {
 }
 
 dependencies {
+    implementation("io.ktor:ktor-server-core")
+    implementation("io.ktor:ktor-server-netty")
+    implementation("io.ktor:ktor-server-websockets:2.3.11")
+
 //    implementation(libs.jsoup)
       implementation(libs.gson)
 //    implementation(libs.csv)
+
+    implementation("io.ktor:ktor-network:2.3.3")
     implementation("io.obs-websocket.community:client:2.0.0")
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.slf4j.api)
@@ -262,7 +269,6 @@ class Openrndr {
             implementation(openrndr("openal"))
             runtimeOnly(openrndrNatives("openal"))
             implementation(openrndr("application"))
-            implementation(openrndr("svg"))
             implementation(openrndr("animatable"))
             implementation(openrndr("extensions"))
             implementation(openrndr("filter"))

@@ -4,7 +4,6 @@ import lib.uv
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.noise.Random
-import org.openrndr.extra.shapes.hobbyCurve
 
 fun main() = application {
     configure {

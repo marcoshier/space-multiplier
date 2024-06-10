@@ -13,7 +13,7 @@ import org.openrndr.extra.parameters.OptionParameter
 import org.openrndr.extra.viewbox.ViewBox
 import org.openrndr.extra.viewbox.viewBox
 import org.openrndr.math.Vector2
-import org.openrndr.shape.Segment
+import org.openrndr.shape.Segment2D
 import org.openrndr.shape.ShapeContour
 import java.io.File
 
@@ -39,14 +39,14 @@ class Mapper(val control: RabbitControlServer? = null): Extension {
     var builder: Mapper.() -> Unit = {}
 
     // Segment class has lazy length property, which is not supported by Gson decoding
-    data class SegmentRef(val start: Vector2, val control: Array<Vector2>, val end:Vector2)
+    data class SegmentRef(val start: Vector2, val control: List<Vector2>, val end:Vector2)
 
-    private fun refFromSegment(from: Segment): SegmentRef {
+    private fun refFromSegment(from: Segment2D): SegmentRef {
         return SegmentRef(from.start, from.control, from.end)
     }
 
-    private fun refToSegment(from: SegmentRef): Segment {
-        return Segment(from.start, from.control, from.end)
+    private fun refToSegment(from: SegmentRef): Segment2D {
+        return Segment2D(from.start, from.control, from.end)
     }
 
     fun fromObject(segmentLists: Map<String, List<List<SegmentRef>>>) {
