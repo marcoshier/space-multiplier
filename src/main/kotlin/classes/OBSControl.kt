@@ -66,6 +66,12 @@ class OBSControl {
         currentSource = sourceName
     }
 
+    fun restartSource(source: String) {
+        controller?.triggerMediaInputAction(source, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART", timeout)
+        currentSource = ""
+    }
+
+
     fun stopSource(source: String? = null) {
         controller?.triggerMediaInputAction(source ?: currentSource, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP", timeout)
         currentSource = ""

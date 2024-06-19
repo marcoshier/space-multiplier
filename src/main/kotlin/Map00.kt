@@ -8,6 +8,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,16 +17,14 @@ import org.openrndr.color.ColorHSLa
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.extra.imageFit.imageFit
-import org.openrndr.ffmpeg.PlayMode
-import org.openrndr.ffmpeg.VideoPlayerFFMPEG
-import org.openrndr.ffmpeg.loadVideo
-import org.openrndr.ffmpeg.loadVideoDevice
+import org.openrndr.ffmpeg.*
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Vector2
 import org.openrndr.shape.Circle
 import org.openrndr.shape.IntRectangle
 import org.openrndr.shape.Rectangle
 import java.io.File
+import kotlin.concurrent.thread
 
 /**
  *  * Projection Mapper v0.1 mini-guide
@@ -54,26 +53,26 @@ import java.io.File
  */
 
 
+@OptIn(DelicateCoroutinesApi::class)
 fun main() = application {
 
     configure {
-        position= IntVector2(1920, 0)
+        //position= IntVector2(1920, 0)
         width = 1920
         height = 1080
         hideWindowDecorations = true
         windowAlwaysOnTop=true
+        fullscreen = Fullscreen.SET_DISPLAY_MODE
        // hideCursor=true
     }
 
     program {
 
-
         val obs = OBSControl()
-        obs.startVirtualCamera()
-        obs.stopSource()
-        obs.playSource("MAIN")
 
-        GlobalScope.launch {
+        obs.restartSource("MAIN")
+
+        thread(isDaemon = true) {
             embeddedServer(Netty, port = 9999) {
                 install(WebSockets)
                 routing {
@@ -96,9 +95,16 @@ fun main() = application {
 
         val background = loadVideo("data/videos/4.mp4", PlayMode.VIDEO)
         background.play()
+        background.ended.listen {
+            background.restart()
+        }
 
         val deviceList = VideoPlayerFFMPEG.listDeviceNames()
-        val main = loadVideoDevice(deviceList.first { it.startsWith("OBS") || it.startsWith("0") }, PlayMode.VIDEO)
+
+        println(deviceList)
+        VideoPlayerConfiguration().apply {
+        }
+        val main = loadVideoDevice("0", PlayMode.VIDEO)
 
         val r =  Rectangle.fromCenter(drawer.bounds.center, 1920.0 / 1.5, 1080 / 1.5)
 

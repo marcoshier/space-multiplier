@@ -193,8 +193,21 @@ class Mapper(val control: RabbitControlServer? = null): Extension {
 
         program.run {
             keyboard.keyUp.listen {
-                if (it.name == "z" && it.modifiers.contains(KeyModifier.CTRL)) {
+                if (it.name == "z" && it.modifiers.contains(KeyModifier.SHIFT)) {
                     undo()
+                }
+                if (it.name == "p") {
+                    if (settings.mode ==MapperMode.ADJUST ) {
+                        settings.mode = MapperMode.PRODUCTION
+                        for (e in elements) {
+                            e.value.mapperMode = MapperMode.PRODUCTION
+                        }
+                    } else {
+                        settings.mode = MapperMode.ADJUST
+                        for (e in elements) {
+                            e.value.mapperMode = MapperMode.ADJUST
+                        }
+                    }
                 }
             }
         }
