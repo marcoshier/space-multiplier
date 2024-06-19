@@ -3,13 +3,18 @@ kotlin = "1.8.21"
 openrndr = "0.4.5-alpha3"
 orx = "0.4.5-alpha3"
 orml = "0.4.1"
-
+javacpp = "1.5.10"
+# ffmpeg version suffix should match javacpp version
+ffmpeg = "6.1.1-1.5.10"
 slf4j = "2.0.7"
 log4j = "2.20.0"
 jackson = "2.14.2"
 
 [libraries]
 kotlin-script-runtime = { group = "org.jetbrains.kotlin", name = "kotlin-script-runtime", version.ref = "kotlin" }
+
+javacpp = { group = "org.bytedeco", name = "javacpp", version.ref = "javacpp" }
+ffmpeg = { group = "org.bytedeco", name = "ffmpeg", version.ref = "ffmpeg" }
 
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 slf4j-nop = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }

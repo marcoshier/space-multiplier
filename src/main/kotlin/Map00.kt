@@ -17,6 +17,7 @@ import org.openrndr.color.ColorHSLa
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.extra.imageFit.imageFit
+import org.openrndr.extra.parameters.BooleanParameter
 import org.openrndr.ffmpeg.*
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Vector2
@@ -60,17 +61,22 @@ fun main() = application {
         //position= IntVector2(1920, 0)
         width = 1920
         height = 1080
-        hideWindowDecorations = true
-        windowAlwaysOnTop=true
-        fullscreen = Fullscreen.SET_DISPLAY_MODE
-       // hideCursor=true
+        hideWindowDecorations = false
+        windowAlwaysOnTop = false
+       // fullscreen = Fullscreen.SET_DISPLAY_MODE
+        hideCursor=true
     }
 
     program {
 
-        val obs = OBSControl()
 
-        obs.restartSource("MAIN")
+        val obs = OBSControl()
+        obs.stopSource("MAIN")
+
+
+
+
+
 
         thread(isDaemon = true) {
             embeddedServer(Netty, port = 9999) {
@@ -93,39 +99,67 @@ fun main() = application {
             }.start(wait = true)
         }
 
-        val background = loadVideo("data/videos/4.mp4", PlayMode.VIDEO)
+        val background = VideoPlayerFFMPEG.fromFile("data/videos/4.mp4", PlayMode.VIDEO, clock = { (obs.getSourceCursor() / 1000.0).coerceAtLeast(0.0) })
+        obs.restartSource("MAIN")
         background.play()
         background.ended.listen {
             background.restart()
         }
 
-        val deviceList = VideoPlayerFFMPEG.listDeviceNames()
 
+
+        val deviceList = VideoPlayerFFMPEG.listDeviceNames()
         println(deviceList)
-        VideoPlayerConfiguration().apply {
-        }
-        val main = loadVideoDevice("0", PlayMode.VIDEO)
+
+        val device = if (System.getProperty("device") != null) "OBS Virtual Camera" else "0"
+        val main = loadVideoDevice(device, PlayMode.VIDEO)
 
         val r =  Rectangle.fromCenter(drawer.bounds.center, 1920.0 / 1.5, 1080 / 1.5)
 
         main.play()
-        println(main.width)
+        main.ended.listen {
+            background.restart()
+        }
+
+
+        var sceneSettings = object {
+            @BooleanParameter("I LOVE MY LAND")
+            var scenePlaying = true
+                set(value) {
+                    if (field && !value) {
+                        obs.stopSource("MAIN")
+                        background.pause()
+                        main.pause()
+                    } else if (!field && value){
+                        obs.restartSource("MAIN")
+                        background.restart()
+                        main.restart()
+                    }
+
+                    field = value
+                }
+        }
+
+        val rcontrol = RabbitControlServer(false)
+        rcontrol.add(sceneSettings)
 
         extend(Mapper()) {
-            settings.mode = MapperMode.ADJUST
-
+            settings.mode = MapperMode.PRODUCTION
             pMap {
                 mapperElement("background", drawer.bounds.contour) {
-                    background.draw(drawer)
+                    if (sceneSettings.scenePlaying) {
+                        background.draw(drawer)
+                    }
                 }
                 mapperElement("main", r.contour) {
-                    drawer.scale(1.0 / 1.5)
-                    main.draw(drawer)
+                    if (sceneSettings.scenePlaying) {
+                        drawer.scale(1.0 / 1.5)
+                        main.draw(drawer)
+                    }
                 }
             }
         }
         extend {
-
         }
     }
 

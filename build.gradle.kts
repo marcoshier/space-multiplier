@@ -110,7 +110,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-netty")
     implementation("io.ktor:ktor-server-websockets:2.3.11")
-
+    implementation(libs.javacpp)
+    implementation(libs.ffmpeg)
 //    implementation(libs.jsoup)
       implementation(libs.gson)
 //    implementation(libs.csv)

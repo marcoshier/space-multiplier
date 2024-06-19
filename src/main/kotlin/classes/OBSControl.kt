@@ -68,7 +68,7 @@ class OBSControl {
 
     fun restartSource(source: String) {
         controller?.triggerMediaInputAction(source, "OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART", timeout)
-        currentSource = ""
+        currentSource = source
     }
 
 
@@ -82,11 +82,11 @@ class OBSControl {
     }
 
     fun getSourceCursor(): Double {
-        return controller?.getMediaInputStatus(currentSource, timeout)!!.mediaCursor.toDouble()
+        return controller?.getMediaInputStatus(currentSource, timeout)?.mediaCursor?.toDouble() ?: 0.0
     }
 
     fun getSourceDuration(): Double {
-        return controller?.getMediaInputStatus(currentSource, timeout)!!.mediaDuration.toDouble()
+        return controller?.getMediaInputStatus(currentSource, timeout)?.mediaDuration?.toDouble() ?: 0.0
     }
 
     fun getNormalizedCursor(): Double {
