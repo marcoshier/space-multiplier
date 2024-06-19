@@ -106,6 +106,9 @@ fun main() = application {
             background.restart()
         }
 
+        program.ended.listen {
+            obs.stopSource("MAIN")
+        }
 
 
         val deviceList = VideoPlayerFFMPEG.listDeviceNames()

@@ -1,7 +1,7 @@
 package lib
 
+// https://iquilezles.org/articles/ibilinear/
 val inverseBilinear = """
-    // https://iquilezles.org/articles/ibilinear/
     vec2 invBilinear( in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d )
                     {
                         vec2 res = vec2(-1.0);
