@@ -4,6 +4,7 @@ import RabbitControlServer
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
+import lab.lightLeaks
 import lib.UIManager
 import mu.KotlinLogging
 import org.openrndr.*
@@ -152,6 +153,19 @@ class Mapper(val control: RabbitControlServer? = null): Extension {
         addListener(m)
     }
 
+
+    fun mapperElementVB(id: String, contour: ShapeContour, feather: Double = 0.0) {
+        val viewbox = p.viewBox(contour.bounds).apply { lightLeaks() }
+        println("spawning mapper element")
+        val m = elements.getOrPut(id) { MapperElement(id, contour, feather, settings.mode).apply { vb = viewbox } }
+
+        initialStates.add(m.name to (0 to m.mask.contour))
+        initialStates.add(m.name to (1 to m.textureQuad.contour))
+
+        uiManager.elements.add(m)
+        addListener(m)
+    }
+
     fun pMap(function: Mapper.() -> Unit) {
         builder = function
     }
@@ -216,10 +230,14 @@ class Mapper(val control: RabbitControlServer? = null): Extension {
         }
     }
 
+    var playing = true
+
     override fun beforeDraw(drawer: Drawer, program: Program) {
         elements.values.forEach {
             val el = if (uiManager.activeElement == null) elements.values.first() else uiManager.activeElement
-            it.draw(drawer, isActive = it == el)
+            if (it.name =="lights") {
+                if (!playing) it.draw(drawer, isActive = it == el, settings.mode)
+            } else  it.draw(drawer, isActive = it == el, settings.mode)
         }
     }
 

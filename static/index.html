@@ -8,6 +8,7 @@
             top: 0;
             left: 0;
             background: black;
+            overflow: hidden;
         }
 
         #counter {
@@ -28,14 +29,49 @@
             position: absolute;
             top: 1vh;
             left: 1vw;
-            height: 98vh;
-            width: 0;
+            height: 0;
+            width: 12vh;
             background: white;
+            transform: rotate(180deg) translate(0, -1080px);
+            transform-origin: top;
+        }
+
+        #time {
+           position: absolute;
+            font-family: "Helvetica", sans-serif;
+            top: 1vh;
+            left: 1vw;
+            color: white;
+            position: absolute;
+            transform: rotate(-90deg);
+            top: 350px;
+            left: 50px;
+            mix-blend-mode: exclusion;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            transform: scale(0.8) rotate(-90deg) translate(720px, 0px);
+            display: block;
+        }
+
+        #duration {
+            color: white;
+            font-family: "Helvetica", sans-serif;
+            font-size: 28px;
+            position: absolute;
+            transform: rotate(-90deg);
+            top: 330px;
+            left: 0px;
         }
     </style>
     <script>
         function readAndDisplayAllTasks() {
-            const serverURL = 'ws://172.20.10.2:9999/ws';
+            const serverURL = 'ws://192.168.0.101:9999/ws';
             const socket = new WebSocket(serverURL);
 
             socket.onopen = logOpenToConsole;
@@ -52,8 +88,13 @@
             let nt = values[0]
             let c = values[1]
             let d = values[2]
-            document.getElementById("loading-bar").style.width = nt * 99 + "vw";
-           // document.getElementById("counter").innerText = "normalized: " + nt + "cursor: " + c + "duration: " + d;
+
+            let minutes = ~~(c / 60);
+            let secs = (c) % 60;
+
+
+            document.getElementById("loading-bar").style.height = nt * 99 + "vw";
+            document.getElementById("time").innerText = "" + minutes + ":" + secs;
         }
 
         function logCloseToConsole() {
@@ -67,9 +108,25 @@
         readAndDisplayAllTasks()
     </script>
 </head>
-<body>
-<div id="loading-container"></div>
-<div id="loading-bar"></div>
-<p id="counter"></p>
+<body id="body" onclick="requestFullscreen()">
+<div id="cnt">
+    <video autoplay="autoplay" muted="muted" loop="loop">
+        <source src="static/assets/VIDEOIPAD.mp4">
+    </video>
+    <div id="loading-container"></div>
+    <div id="loading-bar">
+    </div>
+
+    <p id="time"></p>
+    <p id="duration">FILM DURATION 15 MIN</p>
+
+</div>
+
 </body>
+<script>
+    function requestFullscreen(){
+        document.getElementById("btn").style.display = "none";
+        document.documentElement.requestFullscreen();
+    }
+</script>
 </html>

@@ -62,6 +62,8 @@ class MapperElement(
     var texture: ColorBuffer? = null
     var vb: ViewBox? = null
 
+    var hide = false
+
     var feather = feather
         set(value) {
             field = value.coerceIn(0.0, 1.0)
@@ -319,98 +321,101 @@ class MapperElement(
         parameter("o", 1.0)
     }
 
-    fun draw(drawer: Drawer, isActive: Boolean = true) {
+    fun draw(drawer: Drawer, isActive: Boolean = true, mode: MapperMode) {
 
-        val opacity = if (isActive || mapperMode == MapperMode.PRODUCTION) 1.0 else 0.5
+            mapperMode = mode
 
-        vb?.let {
-            it.update()
-            texture = it.result
-        }
 
-        texture?.let {
-            drawer.isolated {
-                ss.parameter("img", it)
-                ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
-                ss.parameter("feather", feather)
 
-                var o: Double
+            val opacity = if (isActive || mapperMode == MapperMode.PRODUCTION) 1.0 else 0.5
 
-                if (mapperMode == MapperMode.ADJUST) {
-                    o = 0.1 * opacity
-                    drawer.stroke = null
-                    drawer.fill = ColorRGBa.WHITE.opacify(opacity)
+            vb?.let {
+                it.update()
+                texture = it.result
+            }
+
+            texture?.let {
+                drawer.isolated {
+                    ss.parameter("img", it)
+                    ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
+                    ss.parameter("feather", feather)
+
+                    var o: Double
+
+                    if (mapperMode == MapperMode.ADJUST) {
+                        o = 0.1 * opacity
+                        drawer.stroke = null
+                        drawer.fill = ColorRGBa.WHITE.opacify(opacity)
+
+                        ss.parameter("o", o)
+
+                        drawer.shadeStyle = ss
+                        drawer.shape(textureQuad.contour.shape)
+                    }
+
+
+                    drawer.shadeStyle = null
+                    o = 1.0 * opacity
 
                     ss.parameter("o", o)
-
+                    drawer.stroke = ColorRGBa.TRANSPARENT
                     drawer.shadeStyle = ss
-                    drawer.shape(textureQuad.contour.shape)
+                    drawer.fill = ColorRGBa.WHITE.opacify(o)
+                    drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))
+
+
+
+                }
+            }
+
+            if (mapperMode == MapperMode.ADJUST) {
+
+                val c = if (tabPressed) mask else textureQuad
+
+                drawer.fill = ColorRGBa.PINK.opacify(opacity)
+                drawer.circles(c.cPoints, 6.0)
+
+                if (activePointIdx != -1) {
+                    drawer.fill = ColorRGBa.FUCHSIA.opacify(opacity)
+                    c.cPoints.getOrNull(activePointIdx)?.let { drawer.circle(it, 9.0) }
                 }
 
+                for (segment in c.cSegments) {
+                    drawer.fill = ColorRGBa.WHITE.opacify(0.4 * opacity)
+                    drawer.stroke = null
+                    drawer.circles(segment.control.toList(), 4.0)
 
-                drawer.shadeStyle = null
-                o = 1.0 * opacity
+                    drawer.stroke = ColorRGBa.WHITE.opacify(0.4 * opacity)
+                    drawer.strokeWeight = 0.5
+                    segment.control.getOrNull(0)?.let { drawer.lineSegment(segment.start, it) }
+                    segment.control.getOrNull(1)?.let { drawer.lineSegment(it, segment.end) }
 
-                ss.parameter("o", o)
-                drawer.stroke = ColorRGBa.TRANSPARENT
-                drawer.shadeStyle = ss
-                drawer.fill = ColorRGBa.WHITE.opacify(o)
-                drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))
+                }
 
-
-
-            }
-        }
-
-        if (mapperMode == MapperMode.ADJUST) {
-
-            val c = if (tabPressed) mask else textureQuad
-
-            drawer.fill = ColorRGBa.PINK.opacify(opacity)
-            drawer.circles(c.cPoints, 6.0)
-
-            if (activePointIdx != -1) {
-                drawer.fill = ColorRGBa.FUCHSIA.opacify(opacity)
-                c.cPoints.getOrNull(activePointIdx)?.let { drawer.circle(it, 9.0) }
-            }
-
-            for (segment in c.cSegments) {
-                drawer.fill = ColorRGBa.WHITE.opacify(0.4 * opacity)
-                drawer.stroke = null
-                drawer.circles(segment.control.toList(), 4.0)
-
-                drawer.stroke = ColorRGBa.WHITE.opacify(0.4 * opacity)
-                drawer.strokeWeight = 0.5
-                segment.control.getOrNull(0)?.let { drawer.lineSegment(segment.start, it) }
-                segment.control.getOrNull(1)?.let { drawer.lineSegment(it, segment.end) }
-
-            }
-
-            drawer.fill = null
-            drawer.strokeWeight = 2.5
-            drawer.stroke = ColorRGBa.PINK.opacify(opacity)
-            drawer.contour(mask.contour)
-
-            drawer.stroke = ColorRGBa.GREEN.opacify(opacity)
-            drawer.contour(textureQuad.contour)
-
-            if (isActive) {
-                drawer.strokeWeight = 1.0
-                drawer.stroke = ColorRGBa.WHITE
                 drawer.fill = null
-                drawer.shadeStyle = shadeStyle {
-                    fragmentTransform = """
+                drawer.strokeWeight = 2.5
+                drawer.stroke = ColorRGBa.PINK.opacify(opacity)
+                drawer.contour(mask.contour)
+
+                drawer.stroke = ColorRGBa.GREEN.opacify(opacity)
+                drawer.contour(textureQuad.contour)
+
+                if (isActive) {
+                    drawer.strokeWeight = 1.0
+                    drawer.stroke = ColorRGBa.WHITE
+                    drawer.fill = null
+                    drawer.shadeStyle = shadeStyle {
+                        fragmentTransform = """
                      float m = sin(c_contourPosition * 0.85 - p_t * 5.0) * 0.5 + 0.5;
                      x_stroke.rgba *= mix(vec4(1.0), vec4(0.0), m);
                 """.trimIndent()
-                    parameter("t", (System.currentTimeMillis() - initialT) / 1000.0)
+                        parameter("t", (System.currentTimeMillis() - initialT) / 1000.0)
+                    }
+                    drawer.contours(actionBounds)
+                    drawer.shadeStyle = null
                 }
-                drawer.contours(actionBounds)
-                drawer.shadeStyle = null
+
             }
-
-        }
-
 
 
     }
