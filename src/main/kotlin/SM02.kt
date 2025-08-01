@@ -32,8 +32,8 @@ fun main() {
             width = 1080
             height = 1920
             hideWindowDecorations = true
-            position = IntVector2(0, -400)
-            //display = displays[1]
+           // position = IntVector2(0, -400)
+            display = displays[1]
         }
 
         program {

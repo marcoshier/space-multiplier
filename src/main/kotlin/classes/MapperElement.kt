@@ -412,7 +412,7 @@ class MapperElement(
 
 
                         translate(ogshape.bounds.center.x + (smoothPersonPosition.x - 320.0) * 0.5 * (1.0 - i0t), ogshape.bounds.center.y)
-                        scale(i0t)
+                        scale(i0t * 1.1)
                         translate(-ogshape.bounds.center)
 
                         drawer.shape(ogshape)
