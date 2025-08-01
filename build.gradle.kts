@@ -1,6 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "org.openrndr.template"
@@ -30,7 +31,7 @@ val orxFeatures = setOf<String>(
     "orx-image-fit",
 //  "orx-integral-image",
 //  "orx-interval-tree",
-//  "orx-jumpflood",
+    "orx-jumpflood",
 //  "orx-kdtree",
 //  "orx-keyframer",
 //  "orx-kinect-v1",
@@ -98,6 +99,7 @@ plugins {
     alias(libs.plugins.shadow)
     alias(libs.plugins.runtime)
     alias(libs.plugins.gitarchive.tomarkdown).apply(false)
+    kotlin("plugin.serialization") version "2.2.0"
     id("io.ktor.plugin") version "2.3.11"
 }
 
@@ -107,6 +109,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-netty")
     implementation("io.ktor:ktor-server-websockets:2.3.11")
@@ -147,7 +150,9 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------ //

@@ -1,5 +1,6 @@
 package classes
 
+import StackRepeat2
 import lib.*
 import offset.offset
 import org.openrndr.MouseButton
@@ -8,13 +9,19 @@ import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.events.Event
 import org.openrndr.extra.color.presets.FUCHSIA
+import org.openrndr.extra.jumpfill.ShapeSDF
 import org.openrndr.extra.shadestyles.imageFit
 import org.openrndr.extra.shapes.adjust.adjustContour
 import org.openrndr.math.Vector2
 import org.openrndr.math.transforms.transform
 import org.openrndr.shape.*
 import org.openrndr.extra.viewbox.ViewBox
+import org.openrndr.math.map
+import org.openrndr.math.mix
+import org.openrndr.math.smoothstep
+import org.openrndr.math.transforms.buildTransform
 import org.openrndr.shape.Segment2D
+import kotlin.math.sin
 
 class MapperContour(initialContour: ShapeContour) {
     var contour = initialContour
@@ -61,6 +68,31 @@ class MapperElement(
 
     var texture: ColorBuffer? = null
     var vb: ViewBox? = null
+
+    var personPosition = mask.contour.bounds.center
+    var smoothPersonPosition = personPosition
+
+    var personZ = 0.5
+    var smoothPersonZ = personZ
+
+    var rectangles = listOf<Rectangle>()
+        set(value) {
+            field = value
+
+            if (field.isEmpty()) {
+                personPosition = mask.contour.bounds.center
+            } else {
+                val bounds = field.bounds
+
+                personPosition = bounds.center
+
+                val scale = bounds.area
+                val z = scale.map(0.0, 1080.0 * 1920.0, 0.0, 1.0, true)
+
+                personZ = (z * 10.0).coerceIn(0.0, 1.0)
+            }
+
+        }
 
     var hide = false
 
@@ -315,17 +347,24 @@ class MapperElement(
 
                       x_fill = texture(p_img, uv.xy);
                       x_fill.a = p_o;
-                      x_fill.a *= (smoothstep(0.0, p_feather, uv.x)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.x));
-                      x_fill.a *= (smoothstep(0.0, p_feather, uv.y)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.y));
+                      x_fill.rgb = (x_fill.rgb - 0.5) * (1.0 + 0.1 * p_i) + 0.5;
+                     // x_fill.a *= (smoothstep(0.0, p_feather, uv.x)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.x));
+                     // x_fill.a *= (smoothstep(0.0, p_feather, uv.y)) * (1.0 - smoothstep(1.0 - p_feather, 1.0, uv.y));
                     """.trimIndent()
         parameter("o", 1.0)
+        parameter("i", 0)
     }
+
+    val t = System.currentTimeMillis()
 
     fun draw(drawer: Drawer, isActive: Boolean = true, mode: MapperMode) {
 
+            val t0 = (System.currentTimeMillis() - t) / 1000.0
+
+            smoothPersonPosition = personPosition.mix(smoothPersonPosition, 0.95)
+            smoothPersonZ = mix(personZ, smoothPersonZ, 0.85)
+
             mapperMode = mode
-
-
 
             val opacity = if (isActive || mapperMode == MapperMode.PRODUCTION) 1.0 else 0.5
 
@@ -334,38 +373,53 @@ class MapperElement(
                 texture = it.result
             }
 
+            val nRepeats = 20
+
+
+
             texture?.let {
-                drawer.isolated {
-                    ss.parameter("img", it)
-                    ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
-                    ss.parameter("feather", feather)
+                for (i in 0 until nRepeats) {
+                    drawer.isolated {
+                        ss.parameter("img", it)
+                        ss.parameter("pos", textureQuad.cPoints.take(4).reversed().toTypedArray())
+                        ss.parameter("feather", 0.0)
 
-                    var o: Double
+                        var o: Double
 
-                    if (mapperMode == MapperMode.ADJUST) {
-                        o = 0.1 * opacity
-                        drawer.stroke = null
-                        drawer.fill = ColorRGBa.WHITE.opacify(opacity)
+                        if (mapperMode == MapperMode.ADJUST) {
+                            o = 0.1 * opacity
+                            drawer.stroke = null
+                            drawer.fill = ColorRGBa.WHITE.opacify(opacity)
 
-                        ss.parameter("o", o)
+                            ss.parameter("o", o)
 
+                            drawer.shadeStyle = ss
+                            drawer.shape(textureQuad.contour.shape)
+                        }
+
+
+                        drawer.shadeStyle = null
+                        o = 1.0 * opacity
+
+                        ss.parameter("o", 1.0)
+                        ss.parameter("i", i)
+                        drawer.stroke = ColorRGBa.TRANSPARENT
                         drawer.shadeStyle = ss
-                        drawer.shape(textureQuad.contour.shape)
+                        drawer.fill = ColorRGBa.WHITE
+                        val ogshape = textureQuad.contour.shape.intersection(mask.contour.shape)
+
+                        val i0t = ((1.0 - (i / (nRepeats.toDouble()))) * smoothPersonZ + (1.0 - smoothPersonZ)).smoothstep(0.5, 1.0)
+
+
+                        translate(ogshape.bounds.center.x + (smoothPersonPosition.x - 320.0) * 0.5 * (1.0 - i0t), ogshape.bounds.center.y)
+                        scale(i0t)
+                        translate(-ogshape.bounds.center)
+
+                        drawer.shape(ogshape)
                     }
-
-
-                    drawer.shadeStyle = null
-                    o = 1.0 * opacity
-
-                    ss.parameter("o", o)
-                    drawer.stroke = ColorRGBa.TRANSPARENT
-                    drawer.shadeStyle = ss
-                    drawer.fill = ColorRGBa.WHITE.opacify(o)
-                    drawer.shape(textureQuad.contour.shape.intersection(mask.contour.shape))
-
-
-
                 }
+
+
             }
 
             if (mapperMode == MapperMode.ADJUST) {
@@ -417,6 +471,11 @@ class MapperElement(
 
             }
 
+
+
+            drawer.fill = ColorRGBa.WHITE
+            drawer.fontMap = loadFont("data/fonts/default.otf", 30.0)
+            drawer.text(smoothPersonPosition.x.toString(), drawer.bounds.center)
 
     }
 
