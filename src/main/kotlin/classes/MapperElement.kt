@@ -401,7 +401,7 @@ class MapperElement(
                         drawer.shadeStyle = null
                         o = 1.0 * opacity
 
-                        ss.parameter("o", 1.0)
+                        ss.parameter("o", o)
                         ss.parameter("i", i)
                         drawer.stroke = ColorRGBa.TRANSPARENT
                         drawer.shadeStyle = ss
@@ -412,7 +412,7 @@ class MapperElement(
 
 
                         translate(ogshape.bounds.center.x + (smoothPersonPosition.x - 320.0) * 0.5 * (1.0 - i0t), ogshape.bounds.center.y)
-                        scale(i0t * 1.1)
+                        scale(i0t * 1.0)
                         translate(-ogshape.bounds.center)
 
                         drawer.shape(ogshape)

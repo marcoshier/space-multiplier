@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.openrndr.Fullscreen
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.loadImage
@@ -34,6 +35,7 @@ fun main() {
             hideWindowDecorations = true
            // position = IntVector2(0, -400)
             display = displays[1]
+            fullscreen = Fullscreen.SET_DISPLAY_MODE
         }
 
         program {
@@ -122,8 +124,6 @@ fun main() {
 
 
                 mapper.elements.values.first().rectangles = currentRectangles
-                drawer.stroke = ColorRGBa.RED
-                drawer.rectangles(currentRectangles)
 
             }
         }
